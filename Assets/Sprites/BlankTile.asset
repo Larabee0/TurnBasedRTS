@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 55f747e8af38fbe4d8819f37be6fd5aa, type: 3}
+  m_Name: BlankTile
+  m_EditorClassIdentifier: 
+  m_DefaultSprite: {fileID: 21300000, guid: a91310a10945e704f8539026558c1467, type: 3}
+  m_DefaultGameObject: {fileID: 7581208586741278139, guid: 8e7adb520e9888447888dc09f6f102f6, type: 3}
+  m_DefaultColliderType: 1
+  m_TilingRules: []
+  m_FlatTop: 1
