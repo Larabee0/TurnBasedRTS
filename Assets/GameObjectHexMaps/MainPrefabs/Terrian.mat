@@ -143,7 +143,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Floats:
     - BOOLEAN_EBA5C3E43F7F4A1EBB37173C4486E2A7: 0
-    - Boolean_997f410a66984644b34cb86711653d7b: 0
+    - Boolean_997f410a66984644b34cb86711653d7b: 1
     - Vector1_3bcc3835f3774a0eb99d3c54a668f2bb: 1
     - Vector1_c96995d76df14b69aa04f5b7442a22da: -0.65
     - _AORemapMax: 1
