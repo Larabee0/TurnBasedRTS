@@ -10,17 +10,11 @@ namespace DOTSHexagons
 {
     public class HexGridChunkSystem : JobComponentSystem
     {
-        private EndSimulationEntityCommandBufferSystem commandBufferSystemEnd;
-        private BeginSimulationEntityCommandBufferSystem commandBufferSystemBegin;
-
         public static Entity HexGridChunkPrefab;
         // linked entity group index 1 is the chunkFeatureContainer entity.
         // linked entity group index 9+ are containerBuffer Entities.
         protected override void OnCreate()
         {
-            commandBufferSystemEnd = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
-            commandBufferSystemBegin = World.GetOrCreateSystem<BeginSimulationEntityCommandBufferSystem>();
-
             HexGridChunkPrefab = EntityManager.CreateEntity(typeof(Translation), typeof(LocalToWorld), typeof(LocalToParent), typeof(Child), typeof(LinkedEntityGroup), typeof(Parent), typeof(HexGridChunkComponent), typeof(HexGridCellBuffer),typeof(Prefab));
             //EntityManager.SetName(HexGridChunkPrefab, "HexGridChunk");
             EntityManager.GetBuffer<LinkedEntityGroup>(HexGridChunkPrefab).Add(HexGridChunkPrefab);

@@ -141,7 +141,7 @@ namespace DOTSHexagons
         public float3 direction;
         public FeatureCollection ReservedFor;
     }
-        
+    
     public struct NewFeatureSpawn : IComponentData
     {
         public Entity BufferContainer;

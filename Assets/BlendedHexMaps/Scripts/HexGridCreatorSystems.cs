@@ -7,51 +7,14 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using Unity.Jobs;
 using Unity.Burst;
-using Unity.Rendering;
-using Unity.Physics;
-using static DOTSHexagons.UpdateColliderSystem;
 
-namespace DOTSHexagons
+namespace DOTSHexagonsV2
 {
-    public struct HexGridComponent : IComponentData
-    {
-        public int currentCentreColumnIndex;
-        public int cellCountX;
-        public int cellCountZ;
-        public int cellCount;
-        public int chunkCountX;
-        public int chunkCountZ;
-        public int chunkCount;
-        public uint seed;
-        public bool wrapping;
-        public int wrapSize;
-        public Entity gridEntity;
-    }
 
-    public struct HexGridUnInitialised : IComponentData{}
+    [UpdateAfter(typeof(HexGridParentSystem))]
+    public class HexGridV2SystemGroup : ComponentSystemGroup { }
 
-    public struct HexGridDataInitialised : IComponentData 
-    {
-        public int chunkIndex;
-        public Entity gridEntity;
-    }
-    public struct HexGridInvokeEvent : IComponentData { }
-    public struct HexGridCreated : IComponentData { }
-    public struct GridWithColumns : IComponentData { }
-    public struct GridWithChunks : IComponentData { }
-    public struct HexGridVisualsPreInitialised : IComponentData { }
-    public struct HexGridVisualsInitialised : IComponentData { }
-    public struct MeshIndex : IComponentData { public int index; }
-
-    [UpdateAfter(typeof(TransformSystemGroup))]
-    public class HexGridSystemGroup : ComponentSystemGroup { }
-
-    public struct HexColumn : IComponentData 
-    {
-        public int columnIndex;
-    }
-
-    [UpdateInGroup(typeof(HexGridSystemGroup))]
+    [UpdateInGroup(typeof(HexGridV2SystemGroup))]
     public class HexGridCreateColumnsSystem : JobComponentSystem
     {
         EndSimulationEntityCommandBufferSystem ecbEndSystem;
@@ -64,7 +27,7 @@ namespace DOTSHexagons
             ecbEndSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
             ecbBeginSystem = World.GetOrCreateSystem<BeginSimulationEntityCommandBufferSystem>();
 
-            column = EntityManager.CreateArchetype(typeof(Translation), typeof(LocalToWorld), typeof(LocalToParent), typeof(Child), typeof(Parent), typeof(HexColumn));
+            column = EntityManager.CreateArchetype(typeof(HexGridChild), typeof(HexGridParent), typeof(HexColumn));
         }
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
@@ -76,7 +39,7 @@ namespace DOTSHexagons
                 ecbEnd = ecbEndSystem.CreateCommandBuffer().AsParallelWriter(),
                 ecbBegin = ecbBeginSystem.CreateCommandBuffer().AsParallelWriter()
             };
-            JobHandle outputDeps = columnsJob.ScheduleParallel(CreateGridColumns, 64,inputDeps);
+            JobHandle outputDeps = columnsJob.ScheduleParallel(CreateGridColumns, 64, inputDeps);
             ecbEndSystem.AddJobHandleForProducer(outputDeps);
             ecbBeginSystem.AddJobHandleForProducer(outputDeps);
             return outputDeps;
@@ -101,7 +64,7 @@ namespace DOTSHexagons
                     for (int col = 0; col < chunkCountX; col++)
                     {
                         Entity newColumn = ecbBegin.CreateEntity(batchIndex ^ col + i, column);
-                        ecbBegin.SetComponent(batchIndex ^ col + i, newColumn, new Parent { Value = comp.gridEntity });
+                        ecbBegin.SetComponent(batchIndex ^ col + i, newColumn, new HexGridParent { Value = comp.gridEntity });
                         ecbBegin.SetComponent(batchIndex ^ col + i, newColumn, new HexColumn { columnIndex = col });
                     }
                     ecbEnd.RemoveComponent<HexGridUnInitialised>(batchIndex ^ i, comp.gridEntity);
@@ -111,7 +74,7 @@ namespace DOTSHexagons
         }
     }
 
-    [UpdateInGroup(typeof(HexGridSystemGroup))]
+    [UpdateInGroup(typeof(HexGridV2SystemGroup))]
     [UpdateAfter(typeof(HexGridCreateColumnsSystem))]
     public class HexGridCreateChunksSystem : JobComponentSystem
     {
@@ -125,7 +88,7 @@ namespace DOTSHexagons
             ecbEndSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
             ecbBeginSystem = World.GetOrCreateSystem<BeginSimulationEntityCommandBufferSystem>();
 
-            chunk = EntityManager.CreateArchetype(typeof(Translation), typeof(LocalToWorld), typeof(LocalToParent), typeof(Child), typeof(Parent), typeof(HexGridChunkComponent), typeof(HexGridCellBuffer));
+            chunk = EntityManager.CreateArchetype(typeof(HexGridChild), typeof(HexGridParent), typeof(HexGridChunkComponent), typeof(HexGridCellBuffer));
         }
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
@@ -135,7 +98,7 @@ namespace DOTSHexagons
             {
                 chunkPrefab = HexGridChunkSystem.HexGridChunkPrefab,
                 hGCTypeHandle = GetComponentTypeHandle<HexGridComponent>(true),
-                cTypeHandle = GetBufferTypeHandle<Child>(true),
+                cTypeHandle = GetBufferTypeHandle<HexGridChild>(true),
                 columnDataFromEntity = GetComponentDataFromEntity<HexColumn>(true),
                 ecbEnd = ecbEndSystem.CreateCommandBuffer().AsParallelWriter(),
                 ecbBegin = ecbBeginSystem.CreateCommandBuffer().AsParallelWriter()
@@ -155,14 +118,14 @@ namespace DOTSHexagons
             public ComponentTypeHandle<HexGridComponent> hGCTypeHandle;
 
             [ReadOnly]
-            public BufferTypeHandle<Child> cTypeHandle;
+            public BufferTypeHandle<HexGridChild> cTypeHandle;
             [ReadOnly]
             public ComponentDataFromEntity<HexColumn> columnDataFromEntity;
             public EntityCommandBuffer.ParallelWriter ecbEnd;
             public EntityCommandBuffer.ParallelWriter ecbBegin;
             public void Execute(ArchetypeChunk batchInChunk, int batchIndex)
             {
-                BufferAccessor<Child> childrenAccessor = batchInChunk.GetBufferAccessor(cTypeHandle);
+                BufferAccessor<HexGridChild> childrenAccessor = batchInChunk.GetBufferAccessor(cTypeHandle);
                 NativeArray<HexGridComponent> hexGridCompArray = batchInChunk.GetNativeArray(hGCTypeHandle);
                 for (int index = 0; index < hexGridCompArray.Length; index++)
                 {
@@ -170,14 +133,14 @@ namespace DOTSHexagons
                     int chunkCountX = comp.chunkCountX;
                     int chunkCountZ = comp.chunkCountZ;
                     NativeArray<HexGridChunkBuffer> HexGridChunkEntities = new NativeArray<HexGridChunkBuffer>(chunkCountX * chunkCountZ, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
-                    DynamicBuffer<Child> gridChildren = childrenAccessor[index];
+                    DynamicBuffer<HexGridChild> gridChildren = childrenAccessor[index];
                     for (int z = 0, i = 0; z < chunkCountZ; z++)
                     {
                         for (int x = 0; x < chunkCountX; x++)
                         {
                             Entity newChunk = ecbBegin.Instantiate(batchIndex ^ index + i, chunkPrefab);
-                            HexGridChunkEntities[i] = new HexGridChunkBuffer { ChunkEntity = newChunk };
-                            ecbBegin.SetComponent(batchIndex ^ index + i, newChunk, new Parent { Value = GetColumn(gridChildren, x) });
+                            HexGridChunkEntities[i] = new HexGridChunkBuffer { ChunkEntity = newChunk, ChunkIndex = i };
+                            ecbBegin.SetComponent(batchIndex ^ index + i, newChunk, new HexGridParent { Value = GetColumn(gridChildren, x) });
                             ecbBegin.AddComponent(batchIndex ^ index + i, newChunk, new HexGridChunkInitialisationComponent { chunkIndex = i, gridEntity = comp.gridEntity });
                             i++;
                         }
@@ -188,7 +151,7 @@ namespace DOTSHexagons
                     ecbBegin.AddComponent<GridWithChunks>(batchIndex ^ index, comp.gridEntity);
                 }
             }
-            private Entity GetColumn(DynamicBuffer<Child> columns, int x)
+            private Entity GetColumn(DynamicBuffer<HexGridChild> columns, int x)
             {
                 for (int i = 0; i < columns.Length; i++)
                 {
@@ -203,7 +166,7 @@ namespace DOTSHexagons
         }
     }
 
-    [UpdateInGroup(typeof(HexGridSystemGroup))]
+    [UpdateInGroup(typeof(HexGridV2SystemGroup))]
     [UpdateAfter(typeof(HexGridCreateChunksSystem))]
     public class HexGridCreateCellsSystem : JobComponentSystem
     {
@@ -222,10 +185,10 @@ namespace DOTSHexagons
             EntityQuery CreateGridCells = GetEntityQuery(CreateGridCellsQuery);
             CreateGridCells cellsJob = new CreateGridCells
             {
-                noiseColours = HexMetrics.noiseColours,
+                noiseColours = HexFunctions.noiseColours,
                 hGCTypeHandle = GetComponentTypeHandle<HexGridComponent>(true),
                 hgCCFromEntity = GetComponentDataFromEntity<HexGridChunkInitialisationComponent>(true),
-                childFromEntity = GetBufferFromEntity<Child>(true),
+                childFromEntity = GetBufferFromEntity<HexGridChild>(true),
                 gridChunkBufferTypeHandle = GetBufferTypeHandle<HexGridChunkBuffer>(true),
                 ecbEnd = ecbEndSystem.CreateCommandBuffer().AsParallelWriter(),
                 ecbBegin = ecbBeginSystem.CreateCommandBuffer().AsParallelWriter()
@@ -247,7 +210,7 @@ namespace DOTSHexagons
             [ReadOnly]
             public ComponentDataFromEntity<HexGridChunkInitialisationComponent> hgCCFromEntity;
             [ReadOnly]
-            public BufferFromEntity<Child> childFromEntity;
+            public BufferFromEntity<HexGridChild> childFromEntity;
             [ReadOnly]
             public BufferTypeHandle<HexGridChunkBuffer> gridChunkBufferTypeHandle;
 
@@ -267,11 +230,11 @@ namespace DOTSHexagons
                     bool wrapping = comp.wrapping;
                     //Get chunks
                     NativeArray<HexGridChunkBuffer> gridChunkBuffer = gridChunkBufferAccessors[index].ToNativeArray(Allocator.Temp);
-                    DynamicBuffer<Child> gridChildren = childFromEntity[comp.gridEntity];
+                    DynamicBuffer<HexGridChild> gridChildren = childFromEntity[comp.gridEntity];
                     for (int i = 0; i < gridChildren.Length; i++)
                     {
                         Entity column = gridChildren[i].Value;
-                        DynamicBuffer<Child> columnChunks = childFromEntity[column];
+                        DynamicBuffer<HexGridChild> columnChunks = childFromEntity[column];
                         for (int c = 0; c < columnChunks.Length; c++)
                         {
                             int chunkIndex = hgCCFromEntity[columnChunks[c].Value].chunkIndex;
@@ -299,11 +262,11 @@ namespace DOTSHexagons
                         int x = cell.x;
                         int z = cell.z;
                         cell.grid = comp.gridEntity;
-                        cell.Position.x = ((x + z * 0.5f - z / 2) * HexMetrics.innerDiameter);
+                        cell.Position.x = ((x + z * 0.5f - z / 2) * HexFunctions.innerDiameter);
                         cell.Position.y = 0f;
-                        cell.Position.z = (z * (HexMetrics.outerRadius * 1.5f));
+                        cell.Position.z = (z * (HexFunctions.outerRadius * 1.5f));
                         cell.wrapSize = comp.wrapSize;
-                        cell.ColumnIndex = x / HexMetrics.chunkSizeX;
+                        cell.ColumnIndex = x / HexFunctions.chunkSizeX;
                         cell.Explorable = wrapping switch
                         {
                             true => z > 0 && z < cellCountZ - 1,
@@ -365,8 +328,8 @@ namespace DOTSHexagons
                         }
                         cell.elevation = 0;
                         cell.RefreshPosition(noiseColours);
-                        int chunkX = x / HexMetrics.chunkSizeX;
-                        int chunkZ = z / HexMetrics.chunkSizeZ;
+                        int chunkX = x / HexFunctions.chunkSizeX;
+                        int chunkZ = z / HexFunctions.chunkSizeZ;
 
                         cell.ChunkIndex = chunkX + chunkZ * chunkCountX;
                         cells[i] = cell;
@@ -392,7 +355,7 @@ namespace DOTSHexagons
                         cells[i] = cell;
                     }
 
-                    int cellsPerChunk = HexMetrics.chunkSizeX * HexMetrics.chunkSizeZ;
+                    int cellsPerChunk = HexFunctions.chunkSizeX * HexFunctions.chunkSizeZ;
                     for (int i = 0; i < gridChunkBuffer.Length; i++)
                     {
                         NativeList<int> list = new NativeList<int>(cellsPerChunk, Allocator.Temp);
@@ -403,7 +366,7 @@ namespace DOTSHexagons
                             {
                                 continue;
                             }
-                            list.Add( cell.Index);
+                            list.Add(cell.Index);
 
                             if (list.Length >= cellsPerChunk)
                             {
@@ -418,9 +381,9 @@ namespace DOTSHexagons
                             HexCell cell = cells[list[b]];
                             int x = cell.x;
                             int z = cell.z;
-                            int localX = x - (x / HexMetrics.chunkSizeX) * HexMetrics.chunkSizeX;
-                            int localZ = z - (z / HexMetrics.chunkSizeZ) * HexMetrics.chunkSizeZ;
-                            buffer[localX + localZ * HexMetrics.chunkSizeX] = new HexGridCellBuffer { cellIndex = list[b] };
+                            int localX = x - (x / HexFunctions.chunkSizeX) * HexFunctions.chunkSizeX;
+                            int localZ = z - (z / HexFunctions.chunkSizeZ) * HexFunctions.chunkSizeZ;
+                            buffer[localX + localZ * HexFunctions.chunkSizeX] = new HexGridCellBuffer { cellIndex = list[b] };
                         }
                         ecbBegin.AddComponent<HexGridDataInitialised>(batchIndex ^ i, gridChunkBuffer[i].ChunkEntity);
                         ecbBegin.SetBuffer<HexGridCellBuffer>(batchIndex ^ i, gridChunkBuffer[i].ChunkEntity).CopyFrom(buffer);
@@ -438,7 +401,7 @@ namespace DOTSHexagons
         }
     }
 
-    [UpdateInGroup(typeof(HexGridSystemGroup))]
+    [UpdateInGroup(typeof(HexGridV2SystemGroup))]
     [UpdateAfter(typeof(HexGridCreateCellsSystem))]
     public class HexGridPreSystem : JobComponentSystem
     {
@@ -462,13 +425,8 @@ namespace DOTSHexagons
             {
                 return inputDeps;
             }
-            NativeArray<float3> colliderVerts = new NativeArray<float3>(new float3[] { new float3(1), new float3(0), new float3(1, 0, 0) }, Allocator.TempJob);
-            NativeArray<int3> colliderTris = new NativeArray<int3>(1, Allocator.TempJob);
-            colliderTris[0] = new int3(0, 1, 2);
             SetFeautreContainers VisualsPreInitialise = new SetFeautreContainers
             {
-                colliderVerts = colliderVerts,
-                colliderTris = colliderTris,
                 gridMarkForGeneration = GetComponentDataFromEntity<Generate>(true),
                 linkedEntityGroups = GetBufferTypeHandle<LinkedEntityGroup>(true),
                 cellBuffer = GetBufferTypeHandle<HexGridCellBuffer>(true),
@@ -483,76 +441,10 @@ namespace DOTSHexagons
             ecbBeginSystem.AddJobHandleForProducer(outputDeps);
             return outputDeps;
         }
-        [BurstCompile]
-        private struct CreateGridVisuals : IJobEntityBatch
-        {
-            public EntityArchetype featureContainer;
-            public EntityArchetype chunkRenderer;
-
-            [ReadOnly]
-            [DeallocateOnJobCompletion]
-            public NativeArray<float3> colliderVerts;
-            [ReadOnly]
-            [DeallocateOnJobCompletion]
-            public NativeArray<int3> colliderTris;
-            [ReadOnly]
-            public ComponentTypeHandle<HexGridComponent> hGCTypeHandle;
-            [ReadOnly]
-            public BufferTypeHandle<HexGridChunkBuffer> gridChunkBufferTypeHandle;
-            public EntityCommandBuffer.ParallelWriter ecbEnd;
-            public EntityCommandBuffer.ParallelWriter ecbBegin;
-            public void Execute(ArchetypeChunk batchInChunk, int batchIndex)
-            {
-                BufferAccessor<HexGridChunkBuffer> gridChunkBufferAccessors = batchInChunk.GetBufferAccessor(gridChunkBufferTypeHandle);
-                NativeArray<HexGridComponent> hexGridCompArray = batchInChunk.GetNativeArray(hGCTypeHandle);
-                for (int index = 0; index < hexGridCompArray.Length; index++)
-                {
-                    HexGridComponent comp = hexGridCompArray[index];
-                    DynamicBuffer<HexGridChunkBuffer> gridChunkBuffer = gridChunkBufferAccessors[index];
-                    for (int i = 0; i < gridChunkBuffer.Length; i++)
-                    {
-                        // we need to add a component to each new child which tells the next job, what that child needs assigning to
-                        // ie, terrian mesh, feature mesh, etc
-                        // children order is not garauteed and therefore leads to the terrian collider never being on the terrian entity
-                        Entity ChunkEntity = gridChunkBuffer[i].ChunkEntity;
-                        PhysicsCollider collider = new PhysicsCollider
-                        {
-                            Value = Unity.Physics.MeshCollider.Create(colliderVerts, colliderTris)
-                        };
-
-                        Entity featureEntity = ecbBegin.CreateEntity(batchIndex, featureContainer);
-                        ecbBegin.SetComponent(batchIndex, featureEntity, new FeatureContainer { GridEntity = comp.gridEntity });
-                        ecbBegin.SetComponent(batchIndex, featureEntity, new Parent { Value = ChunkEntity });
-                        ecbBegin.AddComponent(batchIndex, featureEntity, new MeshIndex { index = 0 });
-
-                        Entity terrianMesh = ecbBegin.CreateEntity(batchIndex, chunkRenderer);
-                        ecbBegin.AddBuffer<Float3ForCollider>(batchIndex, terrianMesh);
-                        ecbBegin.AddBuffer<UintForCollider>(batchIndex, terrianMesh);
-                        ecbBegin.AddComponent(batchIndex, terrianMesh, collider);
-                        ecbBegin.AddComponent(batchIndex, terrianMesh, new MeshIndex { index = 1 });
-                        ecbBegin.SetComponent(batchIndex, terrianMesh, new Parent { Value = ChunkEntity });
-
-                        for (int m = 0, offset = 2; m < 6; m++)
-                        {
-                            Entity mesh = ecbBegin.CreateEntity(batchIndex, chunkRenderer);
-                            ecbBegin.SetComponent(batchIndex, mesh, new Parent { Value = ChunkEntity });
-                            ecbBegin.AddComponent(batchIndex, mesh, new MeshIndex { index = offset + m });
-                        }
-                    }
-                    ecbEnd.RemoveComponent<HexGridDataInitialised>(batchIndex, comp.gridEntity);
-                    ecbBegin.AddComponent<HexGridVisualsPreInitialised>(batchIndex, comp.gridEntity);
-                }
-            }
-        }
+        
         [BurstCompile]
         private struct SetFeautreContainers : IJobEntityBatch
         {
-            [ReadOnly]
-            [DeallocateOnJobCompletion]
-            public NativeArray<float3> colliderVerts;
-            [ReadOnly]
-            [DeallocateOnJobCompletion]
-            public NativeArray<int3> colliderTris;
             [ReadOnly]
             public ComponentDataFromEntity<Generate> gridMarkForGeneration;
             [ReadOnly]
@@ -574,17 +466,18 @@ namespace DOTSHexagons
                 for (int index = 0; index < hexGridCompArray.Length; index++)
                 {
                     DynamicBuffer<LinkedEntityGroup> linkedEntities = linkedEntityGroupAccessors[index];
-                    
+
                     HexGridChunkComponent comp = hexGridCompArray[index];
                     comp.gridEntity = hexGridInitCompArray[index].gridEntity;
                     comp.chunkIndex = hexGridInitCompArray[index].chunkIndex;
+                    ecbBegin.SetComponent(batchIndex, comp.entityTerrian, new HexRenderer { ChunkIndex = comp.chunkIndex, rendererID = RendererID.Terrian });
+                    ecbBegin.SetComponent(batchIndex, comp.entityRiver, new HexRenderer { ChunkIndex = comp.chunkIndex, rendererID = RendererID.River });
+                    ecbBegin.SetComponent(batchIndex, comp.entityWater, new HexRenderer { ChunkIndex = comp.chunkIndex, rendererID = RendererID.Water });
+                    ecbBegin.SetComponent(batchIndex, comp.entityWaterShore, new HexRenderer { ChunkIndex = comp.chunkIndex, rendererID = RendererID.WaterShore });
+                    ecbBegin.SetComponent(batchIndex, comp.entityEstuaries, new HexRenderer { ChunkIndex = comp.chunkIndex, rendererID = RendererID.Estuaries });
+                    ecbBegin.SetComponent(batchIndex, comp.entityRoads, new HexRenderer { ChunkIndex = comp.chunkIndex, rendererID = RendererID.Roads });
+                    ecbBegin.SetComponent(batchIndex, comp.entityWalls, new HexRenderer { ChunkIndex = comp.chunkIndex, rendererID = RendererID.Walls });
                     ecbBegin.SetComponent(batchIndex, comp.FeatureContainer, new FeatureContainer { GridEntity = comp.gridEntity });
-                    PhysicsCollider collider = new PhysicsCollider
-                    {
-                        Value = Unity.Physics.MeshCollider.Create(colliderVerts, colliderTris)
-                    };
-
-                    ecbBegin.SetComponent(batchIndex, comp.entityTerrian, collider);
 
                     DynamicBuffer<HexGridCellBuffer> cellBuffer = cellBufferAccessors[index];
                     NativeArray<CellContainer> cellFeatures = new NativeArray<CellContainer>(cellBuffer.Length, Allocator.Temp);
@@ -615,14 +508,14 @@ namespace DOTSHexagons
         }
     }
 
-    [UpdateInGroup(typeof(HexGridSystemGroup))]
+    [UpdateInGroup(typeof(HexGridV2SystemGroup))]
     [UpdateAfter(typeof(HexGridPreSystem))]
     public class HexGridInvokeSystem : JobComponentSystem
     {
         EndSimulationEntityCommandBufferSystem ecbEndSystem;
         BeginSimulationEntityCommandBufferSystem ecbBeginSystem;
-        private readonly  EntityQueryDesc CreateGridVisualsPostQuery = new EntityQueryDesc { All = new ComponentType[] { typeof(HexGridComponent), typeof(HexGridVisualsInitialised) } };
-
+        private readonly EntityQueryDesc CreateGridVisualsPostQuery = new EntityQueryDesc { All = new ComponentType[] { typeof(HexGridComponent), typeof(HexGridVisualsInitialised) } };
+    
         protected override void OnCreate()
         {
             ecbEndSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
@@ -636,104 +529,21 @@ namespace DOTSHexagons
             NativeArray<Entity> grids = CreateGridVisualsPost.ToEntityArray(Allocator.Temp);
             for (int i = 0; i < grids.Length; i++)
             {
-
+                GridAPI.ActiveGridEntity = grids[i];
+                GridAPI.Instance.enabled = true;
                 ecbEnd.RemoveComponent<HexGridVisualsInitialised>(grids[i]);
                 ecbBegin.AddComponent<HexGridCreated>(grids[i]);
             }
-            DOTSHexEditor.GridEntities.AddRange(grids);
-            if (DOTSHexEditor.Instance != null)
-            {
-                DOTSHexEditor.Instance.HandleNewGrids();
-            }
-            
-            Debug.Log("Currently " + DOTSHexEditor.GridEntities.Count + " grids.");
+            //DOTSHexEditor.GridEntities.AddRange(grids);
+            //if (DOTSHexEditor.Instance != null)
+            //{
+            //    DOTSHexEditor.Instance.HandleNewGrids();
+            //}
+            //
+            //Debug.Log("Currently " + DOTSHexEditor.GridEntities.Count + " grids.");
             grids.Dispose();
-
+    
             return inputDeps;
-        }
-    }
-
-    public class HexGrid : MonoBehaviour
-    {
-        public int cellCountX = 20;
-        public int cellCountZ = 15;
-
-        public bool wrapping;
-
-        public bool MapCreated { private set; get; }
-
-        public Texture2D cellTexture;
-        public Texture2D noiseSource;
-        public HexMapGenerator mapGenerator;
-        public GameObject HexMeshDebugPrefab;
-        public UnityEngine.Material HexMeshDebugMat;
-
-        public UnityEngine.Material terrianMat;
-        public UnityEngine.Material riverMat;
-        public UnityEngine.Material roadMat;
-        public UnityEngine.Material waterMat;
-        public UnityEngine.Material WaterShoreMat;
-        public UnityEngine.Material EstuariesMat;
-        public UnityEngine.Material WallsMat;
-
-        private int chunkCountX;
-        private int chunkCountZ;
-
-        private World mainWorld;
-        public DOTSHexEditor editor;
-        private EntityManager entityManager;
-        private void Awake()
-        {
-            HexMetrics.terrianMat = terrianMat;
-            HexMetrics.riverMat = riverMat;
-            HexMetrics.roadMat = roadMat;
-            HexMetrics.waterMat = waterMat;
-            HexMetrics.WaterShoreMat = WaterShoreMat;
-            HexMetrics.EstuariesMat = EstuariesMat;
-            HexMetrics.WallsMat = WallsMat;
-            HexMetrics.noiseSource = noiseSource;
-            HexMetrics.cellTexture = cellTexture;
-            HexMetrics.SetNoiseColours();
-        }
-
-        public bool CreateMapDataFullJob(Entity grid,uint seed, int x, int z, bool wrapping)
-        {
-            mainWorld = World.DefaultGameObjectInjectionWorld;
-            entityManager = mainWorld.EntityManager;
-            cellCountX = x;
-            cellCountZ = z;
-            chunkCountX = cellCountX / HexMetrics.chunkSizeX;
-            chunkCountZ = cellCountZ / HexMetrics.chunkSizeZ;
-            this.wrapping = wrapping;
-            int wrapSize = wrapping ? cellCountX : 0;
-            if (x <= 0 || x % HexMetrics.chunkSizeX != 0 || z <= 0 || z % HexMetrics.chunkSizeZ != 0)
-            {
-                Debug.LogError("Unsupported map size.");
-                return false;
-            }
-            entityManager.SetComponentData(grid, new HexGridComponent
-            {
-                cellCountX = cellCountX,
-                cellCountZ = cellCountZ,
-                cellCount = cellCountZ * cellCountX,
-                chunkCountX = chunkCountX,
-                chunkCountZ = chunkCountZ,
-                chunkCount = chunkCountX * chunkCountZ,
-                seed = seed,
-                wrapping = wrapping,
-                wrapSize = wrapSize,
-                gridEntity = grid,
-                currentCentreColumnIndex = -1,
-            });
-            NativeArray<HexHash> hasGrid = HexMetrics.InitializeHashGrid(seed);
-            entityManager.GetBuffer<HexHash>(grid).CopyFrom(hasGrid);
-            hasGrid.Dispose();
-            return true;
-        }
-
-        private void OnDestroy()
-        {
-            HexMetrics.CleanUpNoiseColours();
         }
     }
 }

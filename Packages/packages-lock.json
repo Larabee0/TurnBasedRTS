@@ -8,7 +8,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.burst": {
-      "version": "1.6.2",
+      "version": "1.6.3",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -17,7 +17,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.collab-proxy": {
-      "version": "1.15.4",
+      "version": "1.15.7",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -63,7 +63,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.formats.fbx": {
-      "version": "4.1.1",
+      "version": "4.1.2",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -224,15 +224,15 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.scriptablebuildpipeline": {
-      "version": "1.19.3",
+      "version": "1.19.4",
       "depth": 0,
       "source": "registry",
       "dependencies": {},
       "url": "https://packages.unity.com"
     },
     "com.unity.searcher": {
-      "version": "4.3.2",
-      "depth": 2,
+      "version": "4.9.1",
+      "depth": 0,
       "source": "registry",
       "dependencies": {},
       "url": "https://packages.unity.com"
