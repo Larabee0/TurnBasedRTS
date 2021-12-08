@@ -17,10 +17,10 @@ namespace DOTSHexagonsV2
     [UpdateInGroup(typeof(HexGridV2SystemGroup))]
     public class HexGridCreateColumnsSystem : JobComponentSystem
     {
-        EndSimulationEntityCommandBufferSystem ecbEndSystem;
-        BeginSimulationEntityCommandBufferSystem ecbBeginSystem;
-        EntityArchetype column;
-        private readonly EntityQueryDesc CreateGridColumnQuery = new EntityQueryDesc { All = new ComponentType[] { typeof(HexGridComponent), typeof(HexGridUnInitialised) } };
+        private EndSimulationEntityCommandBufferSystem ecbEndSystem;
+        private BeginSimulationEntityCommandBufferSystem ecbBeginSystem;
+        private EntityArchetype column;
+        private EntityQuery CreateGridColumnQuery;
 
         protected override void OnCreate()
         {
@@ -28,10 +28,11 @@ namespace DOTSHexagonsV2
             ecbBeginSystem = World.GetOrCreateSystem<BeginSimulationEntityCommandBufferSystem>();
 
             column = EntityManager.CreateArchetype(typeof(HexGridChild), typeof(HexGridParent), typeof(HexColumn));
+            CreateGridColumnQuery = GetEntityQuery(new EntityQueryDesc { All = new ComponentType[] { typeof(HexGridComponent), typeof(HexGridUnInitialised) } });
         }
+
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            EntityQuery CreateGridColumns = GetEntityQuery(CreateGridColumnQuery);
             CreateGridColumns columnsJob = new CreateGridColumns
             {
                 column = column,
@@ -39,11 +40,12 @@ namespace DOTSHexagonsV2
                 ecbEnd = ecbEndSystem.CreateCommandBuffer().AsParallelWriter(),
                 ecbBegin = ecbBeginSystem.CreateCommandBuffer().AsParallelWriter()
             };
-            JobHandle outputDeps = columnsJob.ScheduleParallel(CreateGridColumns, 64, inputDeps);
+            JobHandle outputDeps = columnsJob.ScheduleParallel(CreateGridColumnQuery, 64, inputDeps);
             ecbEndSystem.AddJobHandleForProducer(outputDeps);
             ecbBeginSystem.AddJobHandleForProducer(outputDeps);
             return outputDeps;
         }
+
         [BurstCompile]
         private struct CreateGridColumns : IJobEntityBatch
         {
@@ -78,22 +80,19 @@ namespace DOTSHexagonsV2
     [UpdateAfter(typeof(HexGridCreateColumnsSystem))]
     public class HexGridCreateChunksSystem : JobComponentSystem
     {
-        EndSimulationEntityCommandBufferSystem ecbEndSystem;
-        BeginSimulationEntityCommandBufferSystem ecbBeginSystem;
-        EntityArchetype chunk;
-        private readonly EntityQueryDesc CreateGridChunkQuery = new EntityQueryDesc { All = new ComponentType[] { typeof(HexGridComponent), typeof(GridWithColumns) } };
+        private EndSimulationEntityCommandBufferSystem ecbEndSystem;
+        private BeginSimulationEntityCommandBufferSystem ecbBeginSystem;
+        private EntityQuery CreateGridChunkQuery;
 
         protected override void OnCreate()
         {
             ecbEndSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
             ecbBeginSystem = World.GetOrCreateSystem<BeginSimulationEntityCommandBufferSystem>();
-
-            chunk = EntityManager.CreateArchetype(typeof(HexGridChild), typeof(HexGridParent), typeof(HexGridChunkComponent), typeof(HexGridCellBuffer));
+            CreateGridChunkQuery = GetEntityQuery(new EntityQueryDesc { All = new ComponentType[] { typeof(HexGridComponent), typeof(GridWithColumns) } });
         }
+
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            EntityQuery CreateGridChuks = GetEntityQuery(CreateGridChunkQuery);
-
             CreateGridChunksPrefab chunkJob = new CreateGridChunksPrefab
             {
                 chunkPrefab = HexGridChunkSystem.HexGridChunkPrefab,
@@ -104,7 +103,7 @@ namespace DOTSHexagonsV2
                 ecbBegin = ecbBeginSystem.CreateCommandBuffer().AsParallelWriter()
             };
 
-            JobHandle outputDeps = chunkJob.ScheduleParallel(CreateGridChuks, 64, inputDeps);
+            JobHandle outputDeps = chunkJob.ScheduleParallel(CreateGridChunkQuery, 64, inputDeps);
             ecbEndSystem.AddJobHandleForProducer(outputDeps);
             ecbBeginSystem.AddJobHandleForProducer(outputDeps);
             return outputDeps;
@@ -170,19 +169,19 @@ namespace DOTSHexagonsV2
     [UpdateAfter(typeof(HexGridCreateChunksSystem))]
     public class HexGridCreateCellsSystem : JobComponentSystem
     {
-        EndSimulationEntityCommandBufferSystem ecbEndSystem;
-        BeginSimulationEntityCommandBufferSystem ecbBeginSystem;
-        private readonly EntityQueryDesc CreateGridCellsQuery = new EntityQueryDesc { All = new ComponentType[] { typeof(HexGridComponent), typeof(GridWithChunks) } };
+        private EndSimulationEntityCommandBufferSystem ecbEndSystem;
+        private BeginSimulationEntityCommandBufferSystem ecbBeginSystem;
+        private EntityQuery CreateGridCellsQuery;
 
         protected override void OnCreate()
         {
             ecbEndSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
             ecbBeginSystem = World.GetOrCreateSystem<BeginSimulationEntityCommandBufferSystem>();
+            CreateGridCellsQuery = GetEntityQuery(new EntityQueryDesc { All = new ComponentType[] { typeof(HexGridComponent), typeof(GridWithChunks) } });
         }
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            EntityQuery CreateGridCells = GetEntityQuery(CreateGridCellsQuery);
             CreateGridCells cellsJob = new CreateGridCells
             {
                 noiseColours = HexFunctions.noiseColours,
@@ -194,7 +193,7 @@ namespace DOTSHexagonsV2
                 ecbBegin = ecbBeginSystem.CreateCommandBuffer().AsParallelWriter()
             };
 
-            JobHandle outputDeps = cellsJob.ScheduleParallel(CreateGridCells, 64, inputDeps);
+            JobHandle outputDeps = cellsJob.ScheduleParallel(CreateGridCellsQuery, 64, inputDeps);
             ecbEndSystem.AddJobHandleForProducer(outputDeps);
             ecbBeginSystem.AddJobHandleForProducer(outputDeps);
             return outputDeps;
@@ -405,23 +404,22 @@ namespace DOTSHexagonsV2
     [UpdateAfter(typeof(HexGridCreateCellsSystem))]
     public class HexGridPreSystem : JobComponentSystem
     {
-        EndSimulationEntityCommandBufferSystem ecbEndSystem;
-        BeginSimulationEntityCommandBufferSystem ecbBeginSystem;
-        private readonly EntityQueryDesc CreateGridVisualsPreQuery = new EntityQueryDesc { All = new ComponentType[] { typeof(HexGridComponent), typeof(HexGridDataInitialised) } };
-        private readonly EntityQueryDesc CreateGridChunkVisualsPreQuery = new EntityQueryDesc { All = new ComponentType[] { typeof(HexGridChunkComponent), typeof(HexGridDataInitialised) } };
+        private EndSimulationEntityCommandBufferSystem ecbEndSystem;
+        private BeginSimulationEntityCommandBufferSystem ecbBeginSystem;
+        private EntityQuery CreateGridVisualsPreQuery  ;
+        private EntityQuery CreateGridChunkVisualsPreQuery  ;
 
         protected override void OnCreate()
         {
             ecbEndSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
             ecbBeginSystem = World.GetOrCreateSystem<BeginSimulationEntityCommandBufferSystem>();
+            CreateGridVisualsPreQuery = GetEntityQuery(new EntityQueryDesc { All = new ComponentType[] { typeof(HexGridComponent), typeof(HexGridDataInitialised) } });
+            CreateGridChunkVisualsPreQuery = GetEntityQuery(new EntityQueryDesc { All = new ComponentType[] { typeof(HexGridChunkComponent), typeof(HexGridDataInitialised) } });
         }
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            EntityQuery CreateGridVisualsPre = GetEntityQuery(CreateGridVisualsPreQuery);
-            EntityQuery CreateGridChunkVisualsPre = GetEntityQuery(CreateGridChunkVisualsPreQuery);
-
-            if (CreateGridVisualsPre.IsEmpty || CreateGridChunkVisualsPre.IsEmpty)
+            if (CreateGridVisualsPreQuery.IsEmpty || CreateGridChunkVisualsPreQuery.IsEmpty)
             {
                 return inputDeps;
             }
@@ -436,7 +434,7 @@ namespace DOTSHexagonsV2
                 ecbBegin = ecbBeginSystem.CreateCommandBuffer().AsParallelWriter()
             };
 
-            JobHandle outputDeps = VisualsPreInitialise.ScheduleParallel(CreateGridChunkVisualsPre, 64, inputDeps);
+            JobHandle outputDeps = VisualsPreInitialise.ScheduleParallel(CreateGridChunkVisualsPreQuery, 64, inputDeps);
             ecbEndSystem.AddJobHandleForProducer(outputDeps);
             ecbBeginSystem.AddJobHandleForProducer(outputDeps);
             return outputDeps;
@@ -512,21 +510,21 @@ namespace DOTSHexagonsV2
     [UpdateAfter(typeof(HexGridPreSystem))]
     public class HexGridInvokeSystem : JobComponentSystem
     {
-        EndSimulationEntityCommandBufferSystem ecbEndSystem;
-        BeginSimulationEntityCommandBufferSystem ecbBeginSystem;
-        private readonly EntityQueryDesc CreateGridVisualsPostQuery = new EntityQueryDesc { All = new ComponentType[] { typeof(HexGridComponent), typeof(HexGridVisualsInitialised) } };
+        private EndSimulationEntityCommandBufferSystem ecbEndSystem;
+        private BeginSimulationEntityCommandBufferSystem ecbBeginSystem;
+        private EntityQuery CreateGridVisualsPostQuery;
     
         protected override void OnCreate()
         {
             ecbEndSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
             ecbBeginSystem = World.GetOrCreateSystem<BeginSimulationEntityCommandBufferSystem>();
+            CreateGridVisualsPostQuery = GetEntityQuery(new EntityQueryDesc { All = new ComponentType[] { typeof(HexGridComponent), typeof(HexGridVisualsInitialised) } });
         }
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            EntityQuery CreateGridVisualsPost = GetEntityQuery(CreateGridVisualsPostQuery);
             EntityCommandBuffer ecbEnd = ecbEndSystem.CreateCommandBuffer();
             EntityCommandBuffer ecbBegin = ecbBeginSystem.CreateCommandBuffer();
-            NativeArray<Entity> grids = CreateGridVisualsPost.ToEntityArray(Allocator.Temp);
+            NativeArray<Entity> grids = CreateGridVisualsPostQuery.ToEntityArray(Allocator.Temp);
             for (int i = 0; i < grids.Length; i++)
             {
                 GridAPI.ActiveGridEntity = grids[i];
@@ -534,13 +532,13 @@ namespace DOTSHexagonsV2
                 ecbEnd.RemoveComponent<HexGridVisualsInitialised>(grids[i]);
                 ecbBegin.AddComponent<HexGridCreated>(grids[i]);
             }
-            //DOTSHexEditor.GridEntities.AddRange(grids);
-            //if (DOTSHexEditor.Instance != null)
-            //{
-            //    DOTSHexEditor.Instance.HandleNewGrids();
-            //}
-            //
-            //Debug.Log("Currently " + DOTSHexEditor.GridEntities.Count + " grids.");
+            DOTSHexEditorV2.GridEntities.AddRange(grids);
+            if (DOTSHexEditorV2.Instance != null)
+            {
+                DOTSHexEditorV2.Instance.HandleNewGrids();
+            }
+            
+            Debug.Log("Currently " + DOTSHexEditorV2.GridEntities.Count + " grids.");
             grids.Dispose();
     
             return inputDeps;

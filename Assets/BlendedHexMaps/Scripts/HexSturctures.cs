@@ -740,6 +740,11 @@ namespace DOTSHexagonsV2
 	}
 
 
+	public struct FeatureGridInfo : IComponentData
+	{
+		public Entity GridEntity;
+	}
+
 	public struct CellContainer : IBufferElementData
 	{
 		public Entity container;
@@ -824,4 +829,24 @@ namespace DOTSHexagonsV2
 		Plant
 	}
 
+	public struct HexCellShaderDataComponent : IComponentData
+	{
+		public Entity grid;
+		public bool ImmidateMode;
+	}
+	public struct ActiveGridEntity : IComponentData { }
+	public struct MakeActiveGridEntity : IComponentData { }
+	public struct SetFeatureVisability : IComponentData { }
+	public struct InitialiseHexCellShader : IComponentData { public int x, z; public Entity grid; }
+	public struct HexCellShaderRunUpdateLoop : IComponentData { }
+	public struct HexCellShaderRefreshAll : IComponentData { }
+	public struct NeedsVisibilityReset : IComponentData { }
+	public struct HexCellTextureDataBuffer : IBufferElementData
+	{
+		public Color32 celltextureData;
+	}
+	public struct HexCellTransitioningCells : IBufferElementData
+	{
+		public int transitioningCell;
+	}
 }

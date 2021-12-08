@@ -50,6 +50,7 @@ namespace DOTSHexagons
         public HemiSphereMode hemiSphereMode;
     }
     public struct Generate : IComponentData { }
+
     public class HexMapGeneratorSystem : JobComponentSystem
     {
         EndSimulationEntityCommandBufferSystem ecbEndSystem;        

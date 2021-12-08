@@ -20,7 +20,7 @@ namespace DOTSHexagonsV2
         private EndSimulationEntityCommandBufferSystem ecbEndSystem;
         private BeginSimulationEntityCommandBufferSystem ecbBeginSystem;
         private EntityWorldGridAPI entityWorldGridAPI;
-        public static Entity ActiveGridEntity;
+        public static Entity ActiveGridEntity = Entity.Null;
 
 
         public Transform GridContainer;
@@ -56,13 +56,13 @@ namespace DOTSHexagonsV2
                 Debug.Log("Repaint Job scheduled for next frame. " + (UnityEngine.Time.realtimeSinceStartup - startTime) * 1000f + "ms");
                 enabled = false;
             }
-            if (Input.GetKeyUp(KeyCode.C))
-            {
-                startTime = Time.realtimeSinceStartup;
-                Entity gridEntity = entityManager.CreateEntity(typeof(HexGridComponent), typeof(HexGridChild), typeof(HexCell), typeof(HexGridChunkBuffer), typeof(HexGridUnInitialised), typeof(HexHash));
-                ActiveGridEntity = gridEntity;
-                CreateMapDataFullJob(gridEntity, 5, 32, 24, true);
-            }
+            //if (Input.GetKeyUp(KeyCode.C))
+            //{
+            //    startTime = Time.realtimeSinceStartup;
+            //    Entity gridEntity = entityManager.CreateEntity(typeof(HexGridComponent), typeof(HexGridChild), typeof(HexCell), typeof(HexGridChunkBuffer), typeof(HexGridUnInitialised), typeof(HexHash));
+            //    ActiveGridEntity = gridEntity;
+            //    CreateMapDataFullJob(gridEntity, 5, 32, 24, true);
+            //}
         }
 
         public void InitialiseGrid(Entity grid)
@@ -94,7 +94,6 @@ namespace DOTSHexagonsV2
                 ecb.AddComponent<RepaintNow>(comp.entityRoads);
 
                 ecb.AddComponent<RepaintNow>(comp.entityWalls);
-
             }
         }
 
@@ -171,26 +170,11 @@ namespace DOTSHexagonsV2
             hasGrid.Dispose();
             return true;
         }
-
-        public struct RepaintNowJob : IJobParallelFor
-        {
-            [ReadOnly][DeallocateOnJobCompletion]
-            public  NativeArray<HexGridChunkComponent> chunkComps;
-            public EntityCommandBuffer.ParallelWriter ecbBegin;
-
-            public void Execute(int batchIndex)
-            {
-                for (int i = 0; i < chunkComps.Length; i++)
-                {
-                    HexGridChunkComponent comp = chunkComps[i];
-                    ecbBegin.AddComponent<RepaintNow>(batchIndex, comp.entityTerrian);
-                    ecbBegin.AddComponent<RepaintNow>(batchIndex, comp.entityTerrian);
-                }
-            }
-        }
     }
 
 
+    [UpdateInGroup(typeof(HexGridV2SystemGroup))]
+    [UpdateBefore(typeof(HexGridCreateColumnsSystem))]
     public class EntityWorldGridAPI : JobComponentSystem
     {
         public EndSimulationEntityCommandBufferSystem ecbEndSystem;
@@ -204,7 +188,7 @@ namespace DOTSHexagonsV2
         {
             ecbEndSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
             ecbBeginSystem = World.GetOrCreateSystem<BeginSimulationEntityCommandBufferSystem>();
-            repaintChunkQuery = GetEntityQuery(new EntityQueryDesc { All = new ComponentType[] { typeof(HexRenderer), typeof(RepaintNow) } });
+            repaintChunkQuery = GetEntityQuery(new EntityQueryDesc { All = new ComponentType[] { typeof(HexRenderer), typeof(RepaintNow), typeof(RepaintScheduled) } });
         }
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
@@ -240,8 +224,6 @@ namespace DOTSHexagonsV2
             for (int i = 0; i < renderers.Length; i++)
             {
                 Mesh mesh = updatedMeshes[i];
-                mesh.RecalculateNormals();
-                mesh.RecalculateBounds();
                 HexRenderer renderer = renderers[i];
                 HexGridChunk chunk = chunks[renderer.ChunkIndex];
                 switch (renderer.rendererID)
@@ -268,6 +250,8 @@ namespace DOTSHexagonsV2
                         chunk.WallsMesh = mesh;
                         break;
                 }
+                mesh.RecalculateNormals();
+                mesh.RecalculateBounds();
             }
 
             Debug.Log("Repaint Job Run, total time since start:" + (UnityEngine.Time.realtimeSinceStartup - gameObjectWorld.startTime) * 1000f + "ms");
@@ -412,6 +396,5 @@ namespace DOTSHexagonsV2
                 VertexDescriptors.Dispose();
             }
         }
-
     }
 }
