@@ -13,28 +13,40 @@ namespace DOTSHexagonsV2
 {
 	public struct HexGridVertex : IBufferElementData
     {
+		public static implicit operator float3(HexGridVertex v) { return v.Value; }
+		public static implicit operator HexGridVertex(float3 v) { return new HexGridVertex { Value = v }; }
 		public float3 Value;
 	}
 	public struct HexGridTriangles : IBufferElementData
 	{
+		public static implicit operator uint(HexGridTriangles v) { return v.Value; }
+		public static implicit operator HexGridTriangles(uint v) { return new HexGridTriangles { Value = v }; }
 		public uint Value;
 	}
 
 	public struct HexGridIndices : IBufferElementData
-    {
+	{
+		public static implicit operator float3(HexGridIndices v) { return v.Value; }
+		public static implicit operator HexGridIndices(float3 v) { return new HexGridIndices { Value = v }; }
 		public float3 Value;
     }
 	public struct HexGridWeights : IBufferElementData
 	{
+		public static implicit operator float4(HexGridWeights v) { return v.Value; }
+		public static implicit operator HexGridWeights(float4 v) { return new HexGridWeights { Value = v }; }
 		public float4 Value;
 	}
 
 	public struct HexGridUV2 : IBufferElementData
 	{
+		public static implicit operator float2(HexGridUV2 v) { return v.Value; }
+		public static implicit operator HexGridUV2(float2 v) { return new HexGridUV2 { Value = v }; }
 		public float2 Value;
 	}
 	public struct HexGridUV4 : IBufferElementData
 	{
+		public static implicit operator float4(HexGridUV4 v) { return v.Value; }
+		public static implicit operator HexGridUV4(float4 v) { return new HexGridUV4 { Value = v }; }
 		public float4 Value;
 	}
 
@@ -58,7 +70,13 @@ namespace DOTSHexagonsV2
     {
 		public int ChunkIndex;
 		public RendererID rendererID;
+		public int MeshArrayIndex;
 	}
+
+	public struct HexMeshIndex : IComponentData
+    {
+		public int Value;
+    }
 
 	public struct RepaintScheduled : IComponentData { }
 	public struct RepaintNow : IComponentData { }

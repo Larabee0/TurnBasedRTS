@@ -63,10 +63,10 @@ namespace DOTSHexagonsV2
 					ExecuteMesh(cells, chunkCell.cellIndex, terrianMesh, riverMesh, waterMesh, waterShoreMesh, estuaryMesh, roadMesh, wallMesh, features);
 				}
 
-				ecbBegin.SetBuffer<HexGridVertex>(batchIndex, chunkComp.entityTerrian).CopyFrom(terrianMesh.vertices.AsArray().Reinterpret<HexGridVertex>());
-				ecbBegin.SetBuffer<HexGridTriangles>(batchIndex, chunkComp.entityTerrian).CopyFrom(terrianMesh.triangles.AsArray().Reinterpret<HexGridTriangles>());
-				ecbBegin.SetBuffer<HexGridWeights>(batchIndex, chunkComp.entityTerrian).CopyFrom(terrianMesh.cellWeights.AsArray().Reinterpret<HexGridWeights>());
-				ecbBegin.SetBuffer<HexGridIndices>(batchIndex, chunkComp.entityTerrian).CopyFrom(terrianMesh.cellIndices.AsArray().Reinterpret<HexGridIndices>());
+				ecbBegin.SetBuffer<HexGridVertex>(batchIndex, chunkComp.entityTerrian).CopyFrom(terrianMesh.vertices);
+				ecbBegin.SetBuffer<HexGridTriangles>(batchIndex, chunkComp.entityTerrian).CopyFrom(terrianMesh.triangles);
+				ecbBegin.SetBuffer<HexGridWeights>(batchIndex, chunkComp.entityTerrian).CopyFrom(terrianMesh.cellWeights);
+				ecbBegin.SetBuffer<HexGridIndices>(batchIndex, chunkComp.entityTerrian).CopyFrom(terrianMesh.cellIndices);
 				ecbBegin.AddComponent<RepaintScheduled>(batchIndex, chunkComp.entityTerrian);
 
 				ecbBegin.SetBuffer<HexGridVertex>(batchIndex, chunkComp.entityRiver).CopyFrom(riverMesh.vertices.AsArray().Reinterpret<HexGridVertex>());
@@ -76,10 +76,10 @@ namespace DOTSHexagonsV2
 				ecbBegin.SetBuffer<HexGridUV2>(batchIndex, chunkComp.entityRiver).CopyFrom(riverMesh.uvs.AsArray().Reinterpret<HexGridUV2>());
 				ecbBegin.AddComponent<RepaintScheduled>(batchIndex, chunkComp.entityRiver);
 
-				ecbBegin.SetBuffer<HexGridVertex>(batchIndex, chunkComp.entityWater).CopyFrom(waterMesh.vertices.AsArray().Reinterpret<HexGridVertex>());
-				ecbBegin.SetBuffer<HexGridTriangles>(batchIndex, chunkComp.entityWater).CopyFrom(waterMesh.triangles.AsArray().Reinterpret<HexGridTriangles>());
-				ecbBegin.SetBuffer<HexGridWeights>(batchIndex, chunkComp.entityWater).CopyFrom(waterMesh.cellWeights.AsArray().Reinterpret<HexGridWeights>());
-				ecbBegin.SetBuffer<HexGridIndices>(batchIndex, chunkComp.entityWater).CopyFrom(waterMesh.cellIndices.AsArray().Reinterpret<HexGridIndices>());
+				ecbBegin.SetBuffer<HexGridVertex>(batchIndex, chunkComp.entityWater).CopyFrom(waterMesh.vertices.AsArray());
+				ecbBegin.SetBuffer<HexGridTriangles>(batchIndex, chunkComp.entityWater).CopyFrom(waterMesh.triangles.AsArray());
+				ecbBegin.SetBuffer<HexGridWeights>(batchIndex, chunkComp.entityWater).CopyFrom(waterMesh.cellWeights.AsArray());
+				ecbBegin.SetBuffer<HexGridIndices>(batchIndex, chunkComp.entityWater).CopyFrom(waterMesh.cellIndices.AsArray());
 				ecbBegin.AddComponent<RepaintScheduled>(batchIndex, chunkComp.entityWater);
 
 				ecbBegin.SetBuffer<HexGridVertex>(batchIndex, chunkComp.entityWaterShore).CopyFrom(waterShoreMesh.vertices.AsArray().Reinterpret<HexGridVertex>());
@@ -1658,39 +1658,34 @@ namespace DOTSHexagonsV2
 
 		private struct MeshData : INativeDisposable
 		{
-			private NativeArray<VertexAttributeDescriptor> VertexDescriptors;
-			public NativeList<float3> vertices;
-			public NativeList<float3> cellIndices;
-			public NativeList<float4> cellWeights;
-			public NativeList<uint> triangles;
+			public NativeList<HexGridVertex> vertices;
+			public NativeList<HexGridIndices> cellIndices;
+			public NativeList<HexGridWeights> cellWeights;
+			public NativeList<HexGridTriangles> triangles;
 			public uint VertexIndex { get { return (uint)vertices.Length; } }
 
 			public MeshData(int capacity = 0)
 			{
-				VertexDescriptors = new NativeArray<VertexAttributeDescriptor>(3, Allocator.Temp);
-				VertexDescriptors[0] = new VertexAttributeDescriptor(VertexAttribute.Position, VertexAttributeFormat.Float32, 3, 0);
-				VertexDescriptors[1] = new VertexAttributeDescriptor(VertexAttribute.Color, VertexAttributeFormat.Float32, 4, 1);
-				VertexDescriptors[2] = new VertexAttributeDescriptor(VertexAttribute.TexCoord2, VertexAttributeFormat.Float32, 3, 2);
-				vertices = new NativeList<float3>(capacity, Allocator.Temp);
-				cellIndices = new NativeList<float3>(capacity, Allocator.Temp);
-				cellWeights = new NativeList<float4>(capacity, Allocator.Temp);
-				triangles = new NativeList<uint>(capacity, Allocator.Temp);
+				vertices = new NativeList<HexGridVertex>(capacity, Allocator.Temp);
+				cellIndices = new NativeList<HexGridIndices>(capacity, Allocator.Temp);
+				cellWeights = new NativeList<HexGridWeights>(capacity, Allocator.Temp);
+				triangles = new NativeList<HexGridTriangles>(capacity, Allocator.Temp);
 
-				verticesInternalTri = new NativeArray<float3>(3, Allocator.Temp);
-				cellIndicesInternalTri = new NativeArray<float3>(3, Allocator.Temp);
-				cellWeightsInternalTri = new NativeArray<float4>(3, Allocator.Temp);
-				trianglesInternalTri = new NativeArray<uint>(3, Allocator.Temp);
+				verticesInternalTri = new NativeArray<HexGridVertex>(3, Allocator.Temp);
+				cellIndicesInternalTri = new NativeArray<HexGridIndices>(3, Allocator.Temp);
+				cellWeightsInternalTri = new NativeArray<HexGridWeights>(3, Allocator.Temp);
+				trianglesInternalTri = new NativeArray<HexGridTriangles>(3, Allocator.Temp);
 
-				verticesInternalQuad = new NativeArray<float3>(4, Allocator.Temp);
-				cellIndicesInternalQuad = new NativeArray<float3>(4, Allocator.Temp);
-				cellWeightsInternalQuad = new NativeArray<float4>(4, Allocator.Temp);
-				trianglesInternalQuad = new NativeArray<uint>(6, Allocator.Temp);
+				verticesInternalQuad = new NativeArray<HexGridVertex>(4, Allocator.Temp);
+				cellIndicesInternalQuad = new NativeArray<HexGridIndices>(4, Allocator.Temp);
+				cellWeightsInternalQuad = new NativeArray<HexGridWeights>(4, Allocator.Temp);
+				trianglesInternalQuad = new NativeArray<HexGridTriangles>(6, Allocator.Temp);
 			}
 
-			public NativeArray<float3> verticesInternalTri;
-			public NativeArray<float3> cellIndicesInternalTri;
-			public NativeArray<float4> cellWeightsInternalTri;
-			public NativeArray<uint> trianglesInternalTri;
+			public NativeArray<HexGridVertex> verticesInternalTri;
+			public NativeArray<HexGridIndices> cellIndicesInternalTri;
+			public NativeArray<HexGridWeights> cellWeightsInternalTri;
+			public NativeArray<HexGridTriangles> trianglesInternalTri;
 
 			public void ApplyTriangle()
 			{
@@ -1700,10 +1695,10 @@ namespace DOTSHexagonsV2
 				triangles.AddRange(trianglesInternalTri);
 			}
 
-			public NativeArray<float3> verticesInternalQuad;
-			public NativeArray<float3> cellIndicesInternalQuad;
-			public NativeArray<float4> cellWeightsInternalQuad;
-			public NativeArray<uint> trianglesInternalQuad;
+			public NativeArray<HexGridVertex> verticesInternalQuad;
+			public NativeArray<HexGridIndices> cellIndicesInternalQuad;
+			public NativeArray<HexGridWeights> cellWeightsInternalQuad;
+			public NativeArray<HexGridTriangles> trianglesInternalQuad;
 
 			public void ApplyQuad()
 			{
@@ -1715,7 +1710,6 @@ namespace DOTSHexagonsV2
 
 			public JobHandle Dispose(JobHandle inputDeps)
 			{
-				inputDeps = VertexDescriptors.Dispose(inputDeps);
 				inputDeps = vertices.Dispose(inputDeps);
 				inputDeps = cellIndices.Dispose(inputDeps);
 				inputDeps = cellWeights.Dispose(inputDeps);
@@ -1735,7 +1729,6 @@ namespace DOTSHexagonsV2
 
 			public void Dispose()
 			{
-				VertexDescriptors.Dispose();
 				vertices.Dispose();
 				cellIndices.Dispose();
 				cellWeights.Dispose();

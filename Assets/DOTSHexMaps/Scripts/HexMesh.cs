@@ -102,8 +102,8 @@ namespace DOTSHexagons
 							Elements.Add(features[j]);
 						}
 					}
-                    if (Elements.Length > 0)
-                    {
+					if (Elements.Length > 0)
+					{
 						ecbBegin.SetBuffer<PossibleFeaturePosition>(batchIndex, cellContainer).AddRange(Elements);
 						updatecellContainers.Add(cellContainer);
 					}
@@ -147,7 +147,7 @@ namespace DOTSHexagons
 			}
 		}
 
-		private void Triangulate (DynamicBuffer<HexCell> cells, HexDirection direction, HexCell cell, MeshData terrianMesh, MeshUV riverMesh, MeshData waterMesh, MeshUV waterShoreMesh, Mesh2UV estuariesMesh, MeshUV roadMesh, MeshBasic wallMesh, NativeList<PossibleFeaturePosition> features)
+		private void Triangulate(DynamicBuffer<HexCell> cells, HexDirection direction, HexCell cell, MeshData terrianMesh, MeshUV riverMesh, MeshData waterMesh, MeshUV waterShoreMesh, Mesh2UV estuariesMesh, MeshUV roadMesh, MeshBasic wallMesh, NativeList<PossibleFeaturePosition> features)
 		{
 			float3 centre = cell.Position;
 			EdgeVertices e = new EdgeVertices(centre + HexMetrics.GetFirstSolidCorner(direction), centre + HexMetrics.GetSecondSolidCorner(direction));
@@ -188,19 +188,19 @@ namespace DOTSHexagons
 			switch (direction <= HexDirection.SE)
 			{
 				case true:
-					TriangulateConnection(cells,terrianMesh, riverMesh, roadMesh, wallMesh, features, direction, cell, e);
+					TriangulateConnection(cells, terrianMesh, riverMesh, roadMesh, wallMesh, features, direction, cell, e);
 					break;
 			}
 			switch (cell.IsUnderwater)
 			{
 				case true:
-					TriangulateWater(cells,waterMesh, waterShoreMesh, estuariesMesh, direction, cell, centre);
+					TriangulateWater(cells, waterMesh, waterShoreMesh, estuariesMesh, direction, cell, centre);
 					break;
 			}
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private void TriangulateWater (DynamicBuffer<HexCell> cells, MeshData waterMesh, MeshUV waterShoreMesh, Mesh2UV estuariesMesh, HexDirection direction, HexCell cell, float3 centre)
+		private void TriangulateWater(DynamicBuffer<HexCell> cells, MeshData waterMesh, MeshUV waterShoreMesh, Mesh2UV estuariesMesh, HexDirection direction, HexCell cell, float3 centre)
 		{
 			centre.y = cell.WaterSurfaceY;
 			int neighbourIndex = HexCell.GetNeighbourIndex(cell, direction);
@@ -209,16 +209,16 @@ namespace DOTSHexagons
 				HexCell neighbour = cells[neighbourIndex];
 				if (!neighbour.IsUnderwater)
 				{
-					TriangulateWaterShore(cells,waterMesh, waterShoreMesh, estuariesMesh, direction, cell, neighbour, centre);
+					TriangulateWaterShore(cells, waterMesh, waterShoreMesh, estuariesMesh, direction, cell, neighbour, centre);
 				}
 				else
 				{
-					TriangulateOpenWater(cells,waterMesh, direction, cell, neighbourIndex, centre);
+					TriangulateOpenWater(cells, waterMesh, direction, cell, neighbourIndex, centre);
 				}
 			}
 			else
 			{
-				TriangulateOpenWater(cells,waterMesh, direction, cell, neighbourIndex, centre);
+				TriangulateOpenWater(cells, waterMesh, direction, cell, neighbourIndex, centre);
 			}
 		}
 
@@ -264,15 +264,15 @@ namespace DOTSHexagons
 			}
 		}
 
-		private void TriangulateWaterShore (DynamicBuffer<HexCell> cells, MeshData waterMesh, MeshUV waterShoreMesh, Mesh2UV estuariesMesh, HexDirection direction, HexCell cell, HexCell neighbour, float3 centre)
+		private void TriangulateWaterShore(DynamicBuffer<HexCell> cells, MeshData waterMesh, MeshUV waterShoreMesh, Mesh2UV estuariesMesh, HexDirection direction, HexCell cell, HexCell neighbour, float3 centre)
 		{
 			EdgeVertices e1 = new EdgeVertices(centre + HexMetrics.GetFirstWaterCorner(direction), centre + HexMetrics.GetSecondWaterCorner(direction));
-            float3 indices = new float3(cell.Index)
-            {
-                y = neighbour.Index
-            };
+			float3 indices = new float3(cell.Index)
+			{
+				y = neighbour.Index
+			};
 			int wrapSize = cell.wrapSize;
-            AddTriangleInfo(wrapSize, waterMesh, centre, e1.v1, e1.v2, indices, weights1, weights1, weights1);
+			AddTriangleInfo(wrapSize, waterMesh, centre, e1.v1, e1.v2, indices, weights1, weights1, weights1);
 			AddTriangleInfo(wrapSize, waterMesh, centre, e1.v2, e1.v3, indices, weights1, weights1, weights1);
 			AddTriangleInfo(wrapSize, waterMesh, centre, e1.v3, e1.v4, indices, weights1, weights1, weights1);
 			AddTriangleInfo(wrapSize, waterMesh, centre, e1.v4, e1.v5, indices, weights1, weights1, weights1);
@@ -344,7 +344,7 @@ namespace DOTSHexagons
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private void TriangulateEstruary (int wrapSize, MeshUV waterShoreMesh, Mesh2UV estuariesMesh, EdgeVertices e1, EdgeVertices e2, bool incomingRiver, float3 indices)
+		private void TriangulateEstruary(int wrapSize, MeshUV waterShoreMesh, Mesh2UV estuariesMesh, EdgeVertices e1, EdgeVertices e2, bool incomingRiver, float3 indices)
 		{
 			AddTriangleInfoUV(wrapSize, waterShoreMesh, e2.v1, e1.v2, e1.v1, new float2(0f, 1f), 0f, 0f, indices, weights2, weights1, weights1);
 			AddTriangleInfoUV(wrapSize, waterShoreMesh, e2.v5, e1.v5, e1.v4, new float2(0f, 1f), 0f, 0f, indices, weights2, weights1, weights1);
@@ -448,7 +448,7 @@ namespace DOTSHexagons
 									switch (cell.Elevation > neighbour.WaterLevel)
 									{
 										case true:
-											TriangulateWaterfallInWater(cell.wrapSize,riverMesh, e1.v2, e1.v4, e2.v2, e2.v4, cell.RiverSurfaceY, neighbour.RiverSurfaceY, neighbour.WaterSurfaceY, indices);
+											TriangulateWaterfallInWater(cell.wrapSize, riverMesh, e1.v2, e1.v4, e2.v2, e2.v4, cell.RiverSurfaceY, neighbour.RiverSurfaceY, neighbour.WaterSurfaceY, indices);
 											break;
 									}
 									break;
@@ -574,7 +574,7 @@ namespace DOTSHexagons
 									break;
 								case false:
 									float3 indices = new float3(bottomCell.Index, leftCell.Index, rightCell.Index);
-									AddTriangleInfo(bottomCell.wrapSize,terrianMesh, bottom, left, right, indices, weights1, weights2, weights3);
+									AddTriangleInfo(bottomCell.wrapSize, terrianMesh, bottom, left, right, indices, weights1, weights2, weights3);
 									break;
 							}
 							break;
@@ -599,12 +599,12 @@ namespace DOTSHexagons
 			float4 boundaryWeights = math.lerp(weights1, weights2, b);
 			float3 indices = new float3(beginCell.Index, leftCell.Index, rightCell.Index);
 
-			TriangulateBoundaryTriangle(beginCell.wrapSize,terrianMesh, right, weights3, begin, weights1, boundary, boundaryWeights, indices);
+			TriangulateBoundaryTriangle(beginCell.wrapSize, terrianMesh, right, weights3, begin, weights1, boundary, boundaryWeights, indices);
 
 			switch (HexCell.GetEdgeType(leftCell, rightCell) == HexEdgeType.Slope)
 			{
 				case true:
-					TriangulateBoundaryTriangle(beginCell.wrapSize,terrianMesh, left, weights2, right, weights3, boundary, boundaryWeights, indices);
+					TriangulateBoundaryTriangle(beginCell.wrapSize, terrianMesh, left, weights2, right, weights3, boundary, boundaryWeights, indices);
 					break;
 				case false:
 					AddTriangleInfoUnperturbed(terrianMesh, HexMetrics.Perturb(noiseColours, left, beginCell.wrapSize), HexMetrics.Perturb(noiseColours, right, beginCell.wrapSize), boundary, indices, weights2, weights3, boundaryWeights);
@@ -624,12 +624,12 @@ namespace DOTSHexagons
 			float3 boundary = math.lerp(HexMetrics.Perturb(noiseColours, begin, beginCell.wrapSize), HexMetrics.Perturb(noiseColours, right, beginCell.wrapSize), b);
 			float4 boundaryWeight = math.lerp(weights1, weights3, b);
 			float3 indices = new float3(beginCell.Index, leftCell.Index, rightCell.Index);
-			TriangulateBoundaryTriangle(beginCell.wrapSize,terrianMesh, begin, weights1, left, weights2, boundary, boundaryWeight, indices);
+			TriangulateBoundaryTriangle(beginCell.wrapSize, terrianMesh, begin, weights1, left, weights2, boundary, boundaryWeight, indices);
 
 			switch (HexCell.GetEdgeType(leftCell, rightCell) == HexEdgeType.Slope)
 			{
 				case true:
-					TriangulateBoundaryTriangle(beginCell.wrapSize,terrianMesh, left, weights2, right, weights3, boundary, boundaryWeight, indices);
+					TriangulateBoundaryTriangle(beginCell.wrapSize, terrianMesh, left, weights2, right, weights3, boundary, boundaryWeight, indices);
 					break;
 				case false:
 					AddTriangleInfoUnperturbed(terrianMesh, HexMetrics.Perturb(noiseColours, left, beginCell.wrapSize), HexMetrics.Perturb(noiseColours, right, beginCell.wrapSize), boundary, indices, weights2, weights3, boundaryWeight);
@@ -703,7 +703,7 @@ namespace DOTSHexagons
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private void TriangulateWaterfallInWater (int wrapSize,MeshUV riverMesh, float3 v1, float3 v2, float3 v3, float3 v4, float y1, float y2, float waterY, float3 indices)
+		private void TriangulateWaterfallInWater(int wrapSize, MeshUV riverMesh, float3 v1, float3 v2, float3 v3, float3 v4, float y1, float y2, float waterY, float3 indices)
 		{
 			v1.y = v2.y = y1;
 			v3.y = v4.y = y2;
@@ -856,7 +856,7 @@ namespace DOTSHexagons
 			switch (nextHasRiver)
 			{
 				case true:
-					TriangulateRoadEdge(wrapSize, roadMesh,  roadCentre, mR, centre, cell.Index);
+					TriangulateRoadEdge(wrapSize, roadMesh, roadCentre, mR, centre, cell.Index);
 					break;
 			}
 		}
@@ -885,9 +885,9 @@ namespace DOTSHexagons
 				case true:
 					float3 indices = new float3(index);
 					float3 mC = math.lerp(mL, mR, 0.5f);
-					TriangulateRoadSegment(wrapSize, roadMesh,  mL, mC, mR, e.v2, e.v3, e.v4, weights1, weights1, indices);
+					TriangulateRoadSegment(wrapSize, roadMesh, mL, mC, mR, e.v2, e.v3, e.v4, weights1, weights1, indices);
 
-					AddTriangleInfoUV(wrapSize,roadMesh, centre, mL, mC, new float2(1f, 0f), new float2(0f), new float2(1f, 0f), indices, weights1, weights1, weights1);
+					AddTriangleInfoUV(wrapSize, roadMesh, centre, mL, mC, new float2(1f, 0f), new float2(0f), new float2(1f, 0f), indices, weights1, weights1, weights1);
 					AddTriangleInfoUV(wrapSize, roadMesh, centre, mC, mR, new float2(1f, 0f), new float2(1f, 0f), new float2(0f), indices, weights1, weights1, weights1);
 					break;
 				case false:
@@ -896,7 +896,7 @@ namespace DOTSHexagons
 			}
 		}
 
-		private void TriangulateAdjacentToRiver (MeshData terrianMesh, MeshUV roadMesh, NativeList<PossibleFeaturePosition> features, HexDirection direction, HexCell cell, float3 centre, EdgeVertices e)
+		private void TriangulateAdjacentToRiver(MeshData terrianMesh, MeshUV roadMesh, NativeList<PossibleFeaturePosition> features, HexDirection direction, HexCell cell, float3 centre, EdgeVertices e)
 		{
 			switch (cell.HasRoads)
 			{
@@ -944,7 +944,7 @@ namespace DOTSHexagons
 			}
 		}
 
-		private void TriangulateWithRiver (MeshData terrianMesh,MeshUV riverMesh, MeshUV roadMesh, HexDirection direction, HexCell cell, float3 centre, EdgeVertices e)
+		private void TriangulateWithRiver(MeshData terrianMesh, MeshUV riverMesh, MeshUV roadMesh, HexDirection direction, HexCell cell, float3 centre, EdgeVertices e)
 		{
 			float3 centreL;
 			float3 centreR;
@@ -1009,12 +1009,12 @@ namespace DOTSHexagons
 			}
 		}
 
-		private void TriangulateWithRiverBeginOrEnd (int wrapSize, MeshData terrianMesh, MeshUV riverMesh, MeshUV roadMesh,HexCell cell, float3 centre, EdgeVertices e)
+		private void TriangulateWithRiverBeginOrEnd(int wrapSize, MeshData terrianMesh, MeshUV riverMesh, MeshUV roadMesh, HexCell cell, float3 centre, EdgeVertices e)
 		{
 			EdgeVertices m = new EdgeVertices(math.lerp(centre, e.v1, 0.5f), math.lerp(centre, e.v5, 0.5f));
 			m.v3.y = e.v3.y;
 
-			TriangulateEdgeStrip(wrapSize, terrianMesh, roadMesh,m, weights1, cell.Index, e, weights1, cell.Index);
+			TriangulateEdgeStrip(wrapSize, terrianMesh, roadMesh, m, weights1, cell.Index, e, weights1, cell.Index);
 			TriangulateEdgeFan(wrapSize, terrianMesh, centre, m, cell.Index);
 
 			switch (cell.IsUnderwater)
@@ -1049,9 +1049,9 @@ namespace DOTSHexagons
 
 			float3 indices = index1;
 			indices.y = index2;
-			AddQuadInfo(wrapSize,terrianMesh, e1.v1, e1.v2, e2.v1, e2.v2, indices, w1, w1, w2, w2);
-			AddQuadInfo(wrapSize,terrianMesh, e1.v2, e1.v3, e2.v2, e2.v3, indices, w1, w1, w2, w2);
-			AddQuadInfo(wrapSize,terrianMesh, e1.v3, e1.v4, e2.v3, e2.v4, indices, w1, w1, w2, w2);
+			AddQuadInfo(wrapSize, terrianMesh, e1.v1, e1.v2, e2.v1, e2.v2, indices, w1, w1, w2, w2);
+			AddQuadInfo(wrapSize, terrianMesh, e1.v2, e1.v3, e2.v2, e2.v3, indices, w1, w1, w2, w2);
+			AddQuadInfo(wrapSize, terrianMesh, e1.v3, e1.v4, e2.v3, e2.v4, indices, w1, w1, w2, w2);
 			AddQuadInfo(wrapSize, terrianMesh, e1.v4, e1.v5, e2.v4, e2.v5, indices, w1, w1, w2, w2);
 			switch (hasRoad)
 			{
@@ -1074,7 +1074,7 @@ namespace DOTSHexagons
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private void TriangulateRoadEdge(int wrapSize, MeshUV roadMesh, float3 centre, float3 mL, float3 mR, float index)
 		{
-			float3 indices = new float3(index);			
+			float3 indices = new float3(index);
 			AddTriangleInfoUV(wrapSize, roadMesh, centre, mL, mR, new float2(1f, 0), new float2(0f), new float2(0f), indices, weights1, weights1, weights1);
 		}
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1096,13 +1096,13 @@ namespace DOTSHexagons
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private void TriangulateRiverQuad (int wrapSize, MeshUV riverMesh,float3 v1, float3 v2, float3 v3, float3 v4, float y, float v, bool reversed, float3 indices)
+		private void TriangulateRiverQuad(int wrapSize, MeshUV riverMesh, float3 v1, float3 v2, float3 v3, float3 v4, float y, float v, bool reversed, float3 indices)
 		{
 			TriangulateRiverQuad(wrapSize, riverMesh, v1, v2, v3, v4, y, y, v, reversed, indices);
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private void TriangulateRiverQuad (int wrapSize, MeshUV riverMesh, float3 v1, float3 v2, float3 v3, float3 v4, float y1, float y2, float v, bool reversed, float3 indices)
+		private void TriangulateRiverQuad(int wrapSize, MeshUV riverMesh, float3 v1, float3 v2, float3 v3, float3 v4, float y1, float y2, float v, bool reversed, float3 indices)
 		{
 			v1.y = v2.y = y1;
 			v3.y = v4.y = y2;
@@ -1127,7 +1127,7 @@ namespace DOTSHexagons
 
 		#region AddWithCellWeightsAndIndicesOnly
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private void AddTriangleInfo (int wrapSize, MeshData mesh, float3 v1, float3 v2, float3 v3, float3 indices, float4 weights1, float4 weights2, float4 weights3)
+		private void AddTriangleInfo(int wrapSize, MeshData mesh, float3 v1, float3 v2, float3 v3, float3 indices, float4 weights1, float4 weights2, float4 weights3)
 		{
 			uint vertexIndex = mesh.VertexIndex;
 			mesh.verticesInternalTri[0] = HexMetrics.Perturb(noiseColours, v1, wrapSize);
@@ -1180,7 +1180,7 @@ namespace DOTSHexagons
 
 		#region AddWithCellWeightsAndIndicesAndUVs
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private void AddTriangleInfoUV (int wrapSize, MeshUV mesh, float3 v1, float3 v2, float3 v3, float2 uv1, float2 uv2, float2 uv3, float3 indices, float4 weights1, float4 weights2, float4 weights3)
+		private void AddTriangleInfoUV(int wrapSize, MeshUV mesh, float3 v1, float3 v2, float3 v3, float2 uv1, float2 uv2, float2 uv3, float3 indices, float4 weights1, float4 weights2, float4 weights3)
 		{
 			uint vertexIndex = mesh.VertexIndex;
 			mesh.verticesInternalTri[0] = HexMetrics.Perturb(noiseColours, v1, wrapSize);
@@ -1217,7 +1217,7 @@ namespace DOTSHexagons
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private void AddQuadInfoUnperturbedUV (MeshUV mesh, float3 v1, float3 v2, float3 v3, float3 v4, float2 uv1, float2 uv2, float2 uv3, float2 uv4, float3 indices, float4 weights1, float4 weights2, float4 weights3, float4 weights4)
+		private void AddQuadInfoUnperturbedUV(MeshUV mesh, float3 v1, float3 v2, float3 v3, float3 v4, float2 uv1, float2 uv2, float2 uv3, float2 uv4, float3 indices, float4 weights1, float4 weights2, float4 weights3, float4 weights4)
 		{
 			uint vertexIndex = mesh.VertexIndex;
 			mesh.verticesInternalQuad[0] = v1;
@@ -1352,7 +1352,7 @@ namespace DOTSHexagons
 			{
 				return;
 			}
-			
+
 			int wrapSize = pivotCell.wrapSize;
 			bool hasLeftWall = !leftCell.IsUnderwater && HexCell.GetEdgeType(pivotCell, leftCell) != HexEdgeType.Cliff;
 			bool hasRightWall = !rightCell.IsUnderwater && HexCell.GetEdgeType(pivotCell, rightCell) != HexEdgeType.Cliff;

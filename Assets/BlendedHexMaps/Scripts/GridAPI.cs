@@ -45,7 +45,7 @@ namespace DOTSHexagonsV2
 
         void Start()
         {
-            
+
         }
 
         void Update()
@@ -193,8 +193,16 @@ namespace DOTSHexagonsV2
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            Mesh.MeshDataArray meshes = Mesh.AllocateWritableMeshData(repaintChunkQuery.CalculateEntityCount() * 7);
+            Mesh.MeshDataArray meshes = Mesh.AllocateWritableMeshData(repaintChunkQuery.CalculateEntityCount());
             NativeArray<HexRenderer> renderers = repaintChunkQuery.ToComponentDataArray<HexRenderer>(Allocator.Temp);
+            NativeArray<HexMeshIndex> meshIndices = new NativeArray<HexMeshIndex>(meshes.Length, Allocator.Temp);
+            for (int i = 0; i < meshIndices.Length; i++)
+            {
+                HexMeshIndex meshIndex = meshIndices[i];
+                meshIndex.Value = i;
+                meshIndices[i] = meshIndex;
+            }
+            EntityManager.AddComponentData(repaintChunkQuery, meshIndices);
             WriteMapMeshData meshWriteJob = new WriteMapMeshData
             {
                 verticesTypeHandle = GetBufferTypeHandle<HexGridVertex>(true),
@@ -203,12 +211,15 @@ namespace DOTSHexagonsV2
                 weightsTypeHandle = GetBufferTypeHandle<HexGridWeights>(true),
                 uv2TypeHandle = GetBufferTypeHandle<HexGridUV2>(true),
                 uv4TypeHandle = GetBufferTypeHandle<HexGridUV4>(true),
+                rendererTypeHandle = GetComponentTypeHandle<HexRenderer>(true),
+                meshIndexTypeHandle = GetComponentTypeHandle<HexMeshIndex>(true),
                 entityTypeHandle = GetEntityTypeHandle(),
                 meshDataArray = meshes,
                 ecbEnd = ecbEndSystem.CreateCommandBuffer().AsParallelWriter()
             };
 
-            JobHandle MidRunHandle = meshWriteJob.ScheduleParallel(repaintChunkQuery, 1,inputDeps);
+            //JobHandle MidRunHandle = meshWriteJob.ScheduleParallel(repaintChunkQuery, 1, inputDeps);
+            JobHandle MidRunHandle = meshWriteJob.Schedule(repaintChunkQuery, inputDeps);
             ecbEndSystem.AddJobHandleForProducer(MidRunHandle);
             MidRunHandle.Complete();
 
@@ -221,10 +232,25 @@ namespace DOTSHexagonsV2
 
             List<HexGridChunk> chunks = gameObjectWorld.GridChunk;
 
-            for (int i = 0; i < renderers.Length; i++)
+            NativeArray<Entity> entities = repaintChunkQuery.ToEntityArray(Allocator.Temp);
+            updatedMeshes[0].Clear();
+            updatedMeshes[0].SetVertices(EntityManager.GetBuffer<HexGridVertex>(entities[0]).Reinterpret<float3>().AsNativeArray());
+            updatedMeshes[0].SetColors(EntityManager.GetBuffer<HexGridWeights>(entities[0]).Reinterpret<float4>().AsNativeArray());
+            updatedMeshes[0].SetUVs(2,EntityManager.GetBuffer<HexGridIndices>(entities[0]).Reinterpret<float3>().AsNativeArray());
+            updatedMeshes[0].SetTriangles(EntityManager.GetBuffer<HexGridTriangles>(entities[0]).Reinterpret<int>().AsNativeArray().ToArray(), 0);
+
+            //updatedMeshes[0].RecalculateNormals();
+            updatedMeshes[0].RecalculateBounds();
+            //updatedMeshes[0].RecalculateTangents();
+            for (int i = 0; i < 1; i++)
             {
-                Mesh mesh = updatedMeshes[i];
                 HexRenderer renderer = renderers[i];
+                Mesh mesh = updatedMeshes[meshIndices[i].Value];
+               // mesh.RecalculateNormals();
+                mesh.RecalculateBounds();
+                int meshTriangles = mesh.triangles.Length;
+                int expectedTriangles = EntityManager.GetBuffer<HexGridTriangles>(entities[i]).Length;
+                Debug.Log("Expected " + expectedTriangles + " triangles, got " + meshTriangles + ". Difference: " + (meshTriangles - expectedTriangles));
                 HexGridChunk chunk = chunks[renderer.ChunkIndex];
                 switch (renderer.rendererID)
                 {
@@ -250,8 +276,6 @@ namespace DOTSHexagonsV2
                         chunk.WallsMesh = mesh;
                         break;
                 }
-                mesh.RecalculateNormals();
-                mesh.RecalculateBounds();
             }
 
             Debug.Log("Repaint Job Run, total time since start:" + (UnityEngine.Time.realtimeSinceStartup - gameObjectWorld.startTime) * 1000f + "ms");
@@ -277,6 +301,11 @@ namespace DOTSHexagonsV2
             public BufferTypeHandle<HexGridUV4> uv4TypeHandle;
 
             [ReadOnly]
+            public ComponentTypeHandle<HexRenderer> rendererTypeHandle;
+            [ReadOnly]
+            public ComponentTypeHandle<HexMeshIndex> meshIndexTypeHandle;
+
+            [ReadOnly]
             public EntityTypeHandle entityTypeHandle;
 
             public Mesh.MeshDataArray meshDataArray;
@@ -286,55 +315,50 @@ namespace DOTSHexagonsV2
             public void Execute(ArchetypeChunk batchInChunk, int batchIndex, int index)
             {
                 NativeArray<Entity> entities = batchInChunk.GetNativeArray(entityTypeHandle);
+                NativeArray<HexRenderer> hexRenderers = batchInChunk.GetNativeArray(rendererTypeHandle);
+                NativeArray<HexMeshIndex> meshIndices = batchInChunk.GetNativeArray(meshIndexTypeHandle);
                 BufferAccessor<HexGridVertex> verticesBA = batchInChunk.GetBufferAccessor(verticesTypeHandle);
                 BufferAccessor<HexGridTriangles> trianglesBA = batchInChunk.GetBufferAccessor(trianglesTypeHandle);
                 NativeArray<VertexAttributeDescriptor> VertexDescriptors;
-                if (batchInChunk.Has(cellIndicesTypeHandle))
+                for (int i = 0; i < verticesBA.Length; i++)
                 {
-                    BufferAccessor<HexGridWeights> weightsBA = batchInChunk.GetBufferAccessor(weightsTypeHandle);
-                    BufferAccessor<HexGridIndices> cellIndicesBA = batchInChunk.GetBufferAccessor(cellIndicesTypeHandle);
-                    if (batchInChunk.Has(uv2TypeHandle)) // MeshDataUV
+                    HexRenderer hexRenderer = hexRenderers[i];
+                    DynamicBuffer<HexGridVertex> verticesDB = verticesBA[i];
+                    DynamicBuffer<HexGridTriangles> trianglesDB = trianglesBA[i];
+                    int meshIndex = meshIndices[i].Value;
+                    if (hexRenderer.rendererID != RendererID.Walls)
                     {
-                        BufferAccessor<HexGridUV2> uv2BA = batchInChunk.GetBufferAccessor(uv2TypeHandle);
-                        VertexDescriptors = new NativeArray<VertexAttributeDescriptor>(4, Allocator.Temp);
-                        VertexDescriptors[0] = new VertexAttributeDescriptor(VertexAttribute.Position, VertexAttributeFormat.Float32, 3, 0);
-                        VertexDescriptors[1] = new VertexAttributeDescriptor(VertexAttribute.Color, VertexAttributeFormat.Float32, 4, 1);
-                        VertexDescriptors[2] = new VertexAttributeDescriptor(VertexAttribute.TexCoord0, VertexAttributeFormat.Float32, 2, 3);
-                        VertexDescriptors[3] = new VertexAttributeDescriptor(VertexAttribute.TexCoord2, VertexAttributeFormat.Float32, 3, 2);
+                        BufferAccessor<HexGridWeights> weightsBA = batchInChunk.GetBufferAccessor(weightsTypeHandle);
+                        BufferAccessor<HexGridIndices> cellIndicesBA = batchInChunk.GetBufferAccessor(cellIndicesTypeHandle);
 
-                        for (int i = 0; i < verticesBA.Length; i++)
+                        if (hexRenderer.rendererID == RendererID.Terrian || hexRenderer.rendererID == RendererID.Water) // MeshData
                         {
-                            Mesh.MeshData meshData = meshDataArray[index + i];
-                            DynamicBuffer<HexGridVertex> verticesDB = verticesBA[i];
-                            DynamicBuffer<HexGridTriangles> trianglesDB = trianglesBA[i];
+                            VertexDescriptors = new NativeArray<VertexAttributeDescriptor>(3, Allocator.Temp);
+                            VertexDescriptors[0] = new VertexAttributeDescriptor(VertexAttribute.Position, VertexAttributeFormat.Float32, 3, 0);
+                            VertexDescriptors[1] = new VertexAttributeDescriptor(VertexAttribute.Color, VertexAttributeFormat.Float32, 4, 1);
+                            VertexDescriptors[2] = new VertexAttributeDescriptor(VertexAttribute.TexCoord2, VertexAttributeFormat.Float32, 3, 2);
+
+                            Mesh.MeshData meshData = meshDataArray[meshIndex];
                             meshData.SetVertexBufferParams(verticesDB.Length, VertexDescriptors);
                             meshData.SetIndexBufferParams(trianglesDB.Length, IndexFormat.UInt32);
                             meshData.GetVertexData<HexGridVertex>(0).CopyFrom(verticesDB.AsNativeArray());
                             meshData.GetVertexData<HexGridWeights>(1).CopyFrom(weightsBA[i].AsNativeArray());
                             meshData.GetVertexData<HexGridIndices>(2).CopyFrom(cellIndicesBA[i].AsNativeArray());
-                            meshData.GetVertexData<HexGridUV2>(3).CopyFrom(uv2BA[i].AsNativeArray());
                             meshData.GetIndexData<HexGridTriangles>().CopyFrom(trianglesDB.AsNativeArray());
                             meshData.subMeshCount = 1;
-                            meshData.SetSubMesh(0, new SubMeshDescriptor(0, trianglesDB.Length, MeshTopology.Triangles));
-                            ecbEnd.RemoveComponent<RepaintNow>(entities[i].Index, entities[i]);
-                            ecbEnd.RemoveComponent<RepaintScheduled>(entities[i].Index, entities[i]);
+                            meshData.SetSubMesh(0, new SubMeshDescriptor(0, trianglesDB.Length, MeshTopology.Triangles), MeshUpdateFlags.Default);
                         }
-                    }
-                    else if (batchInChunk.Has(uv4TypeHandle)) // MeshData2UV
-                    {
-                        BufferAccessor<HexGridUV4> uv4BA = batchInChunk.GetBufferAccessor(uv4TypeHandle);
-                        VertexDescriptors = new NativeArray<VertexAttributeDescriptor>(5, Allocator.Temp);
-                        VertexDescriptors[0] = new VertexAttributeDescriptor(VertexAttribute.Position, VertexAttributeFormat.Float32, 3, 0);
-                        VertexDescriptors[1] = new VertexAttributeDescriptor(VertexAttribute.Color, VertexAttributeFormat.Float32, 4, 1);
-                        VertexDescriptors[2] = new VertexAttributeDescriptor(VertexAttribute.TexCoord0, VertexAttributeFormat.Float32, 2, 3);
-                        VertexDescriptors[3] = new VertexAttributeDescriptor(VertexAttribute.TexCoord1, VertexAttributeFormat.Float32, 2, 3);
-                        VertexDescriptors[4] = new VertexAttributeDescriptor(VertexAttribute.TexCoord2, VertexAttributeFormat.Float32, 3, 2);
-
-                        for (int i = 0; i < verticesBA.Length; i++)
+                        else if (hexRenderer.rendererID == RendererID.Estuaries) // MeshData2UV
                         {
-                            Mesh.MeshData meshData = meshDataArray[index + i];
-                            DynamicBuffer<HexGridVertex> verticesDB = verticesBA[i];
-                            DynamicBuffer<HexGridTriangles> trianglesDB = trianglesBA[i];
+                            BufferAccessor<HexGridUV4> uv4BA = batchInChunk.GetBufferAccessor(uv4TypeHandle);
+                            VertexDescriptors = new NativeArray<VertexAttributeDescriptor>(5, Allocator.Temp);
+                            VertexDescriptors[0] = new VertexAttributeDescriptor(VertexAttribute.Position, VertexAttributeFormat.Float32, 3, 0);
+                            VertexDescriptors[1] = new VertexAttributeDescriptor(VertexAttribute.Color, VertexAttributeFormat.Float32, 4, 1);
+                            VertexDescriptors[2] = new VertexAttributeDescriptor(VertexAttribute.TexCoord0, VertexAttributeFormat.Float32, 2, 3);
+                            VertexDescriptors[3] = new VertexAttributeDescriptor(VertexAttribute.TexCoord1, VertexAttributeFormat.Float32, 2, 3);
+                            VertexDescriptors[4] = new VertexAttributeDescriptor(VertexAttribute.TexCoord2, VertexAttributeFormat.Float32, 3, 2);
+
+                            Mesh.MeshData meshData = meshDataArray[meshIndex];
                             meshData.SetVertexBufferParams(verticesDB.Length, VertexDescriptors);
                             meshData.SetIndexBufferParams(trianglesDB.Length, IndexFormat.UInt32);
                             meshData.GetVertexData<HexGridVertex>(0).CopyFrom(verticesDB.AsNativeArray());
@@ -344,56 +368,46 @@ namespace DOTSHexagonsV2
                             meshData.GetIndexData<HexGridTriangles>().CopyFrom(trianglesDB.AsNativeArray());
                             meshData.subMeshCount = 1;
                             meshData.SetSubMesh(0, new SubMeshDescriptor(0, trianglesDB.Length, MeshTopology.Triangles));
-                            ecbEnd.RemoveComponent<RepaintNow>(entities[i].Index, entities[i]);
-                            ecbEnd.RemoveComponent<RepaintScheduled>(entities[i].Index, entities[i]);
                         }
-                    }
-                    else // MeshData
-                    {
-                        VertexDescriptors = new NativeArray<VertexAttributeDescriptor>(3, Allocator.Temp);
-                        VertexDescriptors[0] = new VertexAttributeDescriptor(VertexAttribute.Position, VertexAttributeFormat.Float32, 3, 0);
-                        VertexDescriptors[1] = new VertexAttributeDescriptor(VertexAttribute.Color, VertexAttributeFormat.Float32, 4, 1);
-                        VertexDescriptors[2] = new VertexAttributeDescriptor(VertexAttribute.TexCoord2, VertexAttributeFormat.Float32, 3, 2);
-
-                        for (int i = 0; i < verticesBA.Length; i++)
+                        else // MeshDataUV
                         {
-                            Mesh.MeshData meshData = meshDataArray[index + i];
-                            DynamicBuffer<HexGridVertex> verticesDB = verticesBA[i];
-                            DynamicBuffer<HexGridTriangles> trianglesDB = trianglesBA[i];
+                            BufferAccessor<HexGridUV2> uv2BA = batchInChunk.GetBufferAccessor(uv2TypeHandle);
+                            VertexDescriptors = new NativeArray<VertexAttributeDescriptor>(4, Allocator.Temp);
+                            VertexDescriptors[0] = new VertexAttributeDescriptor(VertexAttribute.Position, VertexAttributeFormat.Float32, 3, 0);
+                            VertexDescriptors[1] = new VertexAttributeDescriptor(VertexAttribute.Color, VertexAttributeFormat.Float32, 4, 1);
+                            VertexDescriptors[2] = new VertexAttributeDescriptor(VertexAttribute.TexCoord0, VertexAttributeFormat.Float32, 2, 3);
+                            VertexDescriptors[3] = new VertexAttributeDescriptor(VertexAttribute.TexCoord2, VertexAttributeFormat.Float32, 3, 2);
+
+                            Mesh.MeshData meshData = meshDataArray[meshIndex];
                             meshData.SetVertexBufferParams(verticesDB.Length, VertexDescriptors);
                             meshData.SetIndexBufferParams(trianglesDB.Length, IndexFormat.UInt32);
                             meshData.GetVertexData<HexGridVertex>(0).CopyFrom(verticesDB.AsNativeArray());
                             meshData.GetVertexData<HexGridWeights>(1).CopyFrom(weightsBA[i].AsNativeArray());
                             meshData.GetVertexData<HexGridIndices>(2).CopyFrom(cellIndicesBA[i].AsNativeArray());
+                            meshData.GetVertexData<HexGridUV2>(3).CopyFrom(uv2BA[i].AsNativeArray());
                             meshData.GetIndexData<HexGridTriangles>().CopyFrom(trianglesDB.AsNativeArray());
                             meshData.subMeshCount = 1;
                             meshData.SetSubMesh(0, new SubMeshDescriptor(0, trianglesDB.Length, MeshTopology.Triangles));
-                            ecbEnd.RemoveComponent<RepaintNow>(entities[i].Index, entities[i]);
-                            ecbEnd.RemoveComponent<RepaintScheduled>(entities[i].Index, entities[i]);
                         }
                     }
-                }
-                else // MeshBasic (walls)
-                {
-                    VertexDescriptors = new NativeArray<VertexAttributeDescriptor>(1, Allocator.Temp);
-                    VertexDescriptors[0] = new VertexAttributeDescriptor(VertexAttribute.Position, VertexAttributeFormat.Float32, 3, 0);
-                    for (int i = 0; i < verticesBA.Length; i++)
+                    else // MeshBasic (walls)
                     {
-                        Mesh.MeshData meshData = meshDataArray[index + i];
-                        DynamicBuffer<HexGridVertex> verticesDB = verticesBA[i];
-                        DynamicBuffer<HexGridTriangles> trianglesDB = trianglesBA[i];
+                        VertexDescriptors = new NativeArray<VertexAttributeDescriptor>(1, Allocator.Temp);
+                        VertexDescriptors[0] = new VertexAttributeDescriptor(VertexAttribute.Position, VertexAttributeFormat.Float32, 3, 0);
+                        Mesh.MeshData meshData = meshDataArray[meshIndex];
                         meshData.SetVertexBufferParams(verticesDB.Length, VertexDescriptors);
                         meshData.SetIndexBufferParams(trianglesDB.Length, IndexFormat.UInt32);
                         meshData.GetVertexData<HexGridVertex>(0).CopyFrom(verticesDB.AsNativeArray());
                         meshData.GetIndexData<HexGridTriangles>().CopyFrom(trianglesDB.AsNativeArray());
                         meshData.subMeshCount = 1;
                         meshData.SetSubMesh(0, new SubMeshDescriptor(0, trianglesDB.Length, MeshTopology.Triangles));
-                        ecbEnd.RemoveComponent<RepaintNow>(entities[i].Index, entities[i]);
-                        ecbEnd.RemoveComponent<RepaintScheduled>(entities[i].Index, entities[i]);
                     }
+
+                    ecbEnd.RemoveComponent<RepaintNow>(entities[i].Index, entities[i]);
+                    ecbEnd.RemoveComponent<RepaintScheduled>(entities[i].Index, entities[i]);
+                    ecbEnd.RemoveComponent<HexMeshIndex>(entities[i].Index, entities[i]);
+                    VertexDescriptors.Dispose();
                 }
-                
-                VertexDescriptors.Dispose();
             }
         }
     }

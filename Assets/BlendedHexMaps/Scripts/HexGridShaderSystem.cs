@@ -9,6 +9,7 @@ using Unity.Rendering;
 
 namespace DOTSHexagonsV2
 {
+
     public class HexGridShaderSystem : JobComponentSystem
     {
         const float transitionSpeed = 255f;
