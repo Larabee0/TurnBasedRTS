@@ -112,6 +112,7 @@ namespace DOTSHexagonsV2
 		{
 			if (Input.GetKeyUp(KeyCode.C))
 			{
+				GridAPI.Instance.startTime = Time.realtimeSinceStartup;
 				for (int i = 0; i < 1; i++)
 				{
 					generator.GenerateMap(32, 24, true);

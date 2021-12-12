@@ -51,6 +51,11 @@ namespace DOTSHexagonsV2
 	}
 
 
+	public struct CentreMap : IComponentData
+	{
+		public float value;
+	}
+
 	public struct HexGridComponent : IComponentData
     {
         public int currentCentreColumnIndex;

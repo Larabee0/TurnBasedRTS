@@ -120,6 +120,11 @@ namespace DOTSHexagons
         {
             ecb.AddComponent<HexCellShaderRunUpdateLoop>(HexCellShaderData);
             ecb.AddComponent<HexCellShaderRefreshAll>(HexCellShaderData);
+            DynamicBuffer<HexCell> cells = EntityManager.GetBuffer<HexCell>(HexMetrics.ActiveGridEntity);
+            for (int i = 0; i < cells.Length; i++)
+            {
+                Debug.Log(cells[i].terrianTypeIndex);
+            }
         }
         public void ScheduleRefreshAll()
         {

@@ -102,8 +102,8 @@ namespace DOTSHexagons
 							Elements.Add(features[j]);
 						}
 					}
-					if (Elements.Length > 0)
-					{
+                    if (Elements.Length > 0)
+                    {
 						ecbBegin.SetBuffer<PossibleFeaturePosition>(batchIndex, cellContainer).AddRange(Elements);
 						updatecellContainers.Add(cellContainer);
 					}

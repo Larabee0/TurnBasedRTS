@@ -218,8 +218,8 @@ namespace DOTSHexagonsV2
                 ecbEnd = ecbEndSystem.CreateCommandBuffer().AsParallelWriter()
             };
 
-            //JobHandle MidRunHandle = meshWriteJob.ScheduleParallel(repaintChunkQuery, 1, inputDeps);
-            JobHandle MidRunHandle = meshWriteJob.Schedule(repaintChunkQuery, inputDeps);
+            JobHandle MidRunHandle = meshWriteJob.ScheduleParallel(repaintChunkQuery, 1, inputDeps);
+            //JobHandle MidRunHandle = meshWriteJob.Schedule(repaintChunkQuery, inputDeps);
             ecbEndSystem.AddJobHandleForProducer(MidRunHandle);
             MidRunHandle.Complete();
 
@@ -232,25 +232,12 @@ namespace DOTSHexagonsV2
 
             List<HexGridChunk> chunks = gameObjectWorld.GridChunk;
 
-            NativeArray<Entity> entities = repaintChunkQuery.ToEntityArray(Allocator.Temp);
-            updatedMeshes[0].Clear();
-            updatedMeshes[0].SetVertices(EntityManager.GetBuffer<HexGridVertex>(entities[0]).Reinterpret<float3>().AsNativeArray());
-            updatedMeshes[0].SetColors(EntityManager.GetBuffer<HexGridWeights>(entities[0]).Reinterpret<float4>().AsNativeArray());
-            updatedMeshes[0].SetUVs(2,EntityManager.GetBuffer<HexGridIndices>(entities[0]).Reinterpret<float3>().AsNativeArray());
-            updatedMeshes[0].SetTriangles(EntityManager.GetBuffer<HexGridTriangles>(entities[0]).Reinterpret<int>().AsNativeArray().ToArray(), 0);
-
-            //updatedMeshes[0].RecalculateNormals();
-            updatedMeshes[0].RecalculateBounds();
-            //updatedMeshes[0].RecalculateTangents();
-            for (int i = 0; i < 1; i++)
+            for (int i = 0; i < renderers.Length; i++)
             {
                 HexRenderer renderer = renderers[i];
                 Mesh mesh = updatedMeshes[meshIndices[i].Value];
-               // mesh.RecalculateNormals();
+                mesh.RecalculateNormals();
                 mesh.RecalculateBounds();
-                int meshTriangles = mesh.triangles.Length;
-                int expectedTriangles = EntityManager.GetBuffer<HexGridTriangles>(entities[i]).Length;
-                Debug.Log("Expected " + expectedTriangles + " triangles, got " + meshTriangles + ". Difference: " + (meshTriangles - expectedTriangles));
                 HexGridChunk chunk = chunks[renderer.ChunkIndex];
                 switch (renderer.rendererID)
                 {

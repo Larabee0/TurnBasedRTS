@@ -150,20 +150,15 @@ namespace DOTSHexagons
                     }
                     randomNumberGenerator = ErodeLand(cells, erodibleCells, randomNumberGenerator, settings.erosionPercentage);
 
-                    NativeList<ClimateData> climate = new NativeList<ClimateData>(cells.Length, Allocator.Temp);
-                    NativeList<ClimateData> nextClimate = new NativeList<ClimateData>(cells.Length, Allocator.Temp);
-                    CreateClimate(cells, climate, nextClimate, settings);
+                    NativeArray<ClimateData> climate = new NativeArray<ClimateData>(cells.Length, Allocator.Temp);
+                    NativeArray<ClimateData> nextClimate = new NativeArray<ClimateData>(cells.Length, Allocator.Temp);
+                    climate = CreateClimate(cells, climate, nextClimate, settings);
 
                     randomNumberGenerator = CreateRivers(cells, climate, randomNumberGenerator, settings, landCells);
 
                     SetTerrianType(cells, climate, grid, settings, randomNumberGenerator);
                     climate.Dispose();
-
-                    DynamicBuffer<HexCell> cellBuffer = hexCellBufferAccessors[i];
-                    for (int cellIndex = 0; cellIndex < cells.Length; cellIndex++)
-                    {
-                        cellBuffer[cellIndex] = cells[cellIndex];
-                    }
+                    hexCellBufferAccessors[i].CopyFrom(cells);
                     cells.Dispose();
                     DynamicBuffer<HexGridChunkBuffer> chunkBuffer = hexGridChunkBufferAccessors[i];
                     for (int chunkIndex = 0; chunkIndex < chunkBuffer.Length; chunkIndex++)
@@ -546,7 +541,7 @@ namespace DOTSHexagons
 
             }
             #endregion
-            private void CreateClimate(NativeArray<HexCell> cells, NativeList<ClimateData> climate, NativeList<ClimateData> nextClimate,GenerationSettings settings)
+            private NativeArray<ClimateData> CreateClimate(NativeArray<HexCell> cells, NativeArray<ClimateData> climate, NativeArray<ClimateData> nextClimate,GenerationSettings settings)
             {
                 ClimateData initialData = new ClimateData
                 {
@@ -556,8 +551,8 @@ namespace DOTSHexagons
 
                 for (int i = 0; i < cells.Length; i++)
                 {
-                    climate.AddNoResize(initialData);
-                    nextClimate.AddNoResize(clearData);
+                    climate[i]=initialData;
+                    nextClimate[i] = clearData;
                 }
 
                 for (int cycle = 0; cycle < 40; cycle++)
@@ -635,15 +630,19 @@ namespace DOTSHexagons
                         nextClimate[i] = nextCellClimate;
                         climate[i] = new ClimateData();
                     }
-                    NativeList<ClimateData> swap = climate;
-                    climate = nextClimate;
-                    nextClimate = swap;
+                    NativeArray<ClimateData> swap = new NativeArray<ClimateData>(climate, Allocator.Temp);
+                    climate.Dispose();
+                    climate = new NativeArray<ClimateData>(nextClimate, Allocator.Temp);
+                    nextClimate.Dispose();
+                    nextClimate = new NativeArray<ClimateData>(swap, Allocator.Temp);
+                    swap.Dispose();
                 }
 
                 nextClimate.Dispose();
+                return climate;
             }
             #region CreateRivers
-            private Unity.Mathematics.Random CreateRivers(NativeArray<HexCell> cells, NativeList<ClimateData> climate, Unity.Mathematics.Random randomNumber, GenerationSettings settings, int landCells)
+            private Unity.Mathematics.Random CreateRivers(NativeArray<HexCell> cells, NativeArray<ClimateData> climate, Unity.Mathematics.Random randomNumber, GenerationSettings settings, int landCells)
             {
                 NativeList<int> riverOrigins = new NativeList<int>(cells.Length * 2, Allocator.Temp);
                 int riverBudget = (int)math.round(landCells * settings.riverPercentage * 0.01f);
@@ -841,7 +840,7 @@ namespace DOTSHexagons
             }
             #endregion
             #region SetTerrian
-            private void SetTerrianType(NativeArray<HexCell> cells, NativeList<ClimateData> climate, HexGridComponent grid, GenerationSettings settings, Unity.Mathematics.Random randomNumberGenerator)
+            private void SetTerrianType(NativeArray<HexCell> cells, NativeArray<ClimateData> climate, HexGridComponent grid, GenerationSettings settings, Unity.Mathematics.Random randomNumberGenerator)
             {
 
                 int temperatureJitterChannel = randomNumberGenerator.NextInt(0, 4);
