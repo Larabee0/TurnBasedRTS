@@ -11307,7 +11307,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   internalPrefabs: {fileID: 1771999947}
   GridContainer: {fileID: 1570297239}
-  GridChunk: []
+  GridChunks: []
+  GridColumns: []
   cellCountX: 20
   cellCountZ: 15
   wrapping: 0
@@ -11338,6 +11339,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eac6143cdc5c18f40a285eb9953d90d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  gridColumnPrefab: {fileID: 6351141363131410625, guid: 4c1b464e00e681a49a5bdf2eac185b57, type: 3}
   gridChunkPrefab: {fileID: 7874830607128136338, guid: 95b39df40e3f2f54486bf7aac8521a93, type: 3}
   noiseSource: {fileID: 2800000, guid: b9e37f518e7a650448a6a59ee52a6405, type: 3}
 --- !u!114 &1771999948

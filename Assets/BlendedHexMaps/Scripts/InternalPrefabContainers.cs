@@ -11,10 +11,12 @@ namespace DOTSHexagonsV2
 {
     public class InternalPrefabContainers : MonoBehaviour
     {
+        [SerializeField] private HexGridColumn gridColumnPrefab;
         [SerializeField] private HexGridChunk gridChunkPrefab;
 
         [SerializeField] private Texture2D noiseSource;
         public HexGridChunk GridChunkPrefab { get { return gridChunkPrefab; } }
+        public HexGridColumn GridColumnPrefab { get { return gridColumnPrefab;} }
 
         private void Awake()
         {

@@ -27,7 +27,7 @@ namespace DOTSHexagonsV2
         {
             for (int i = 0; i < children.Length; i++)
             {
-                if (children[i].Value == entity)
+                if (children[i] == entity)
                     return i;
             }
 
@@ -70,11 +70,11 @@ namespace DOTSHexagonsV2
 
                     for (int j = 0; j < batchInChunk.Count; j++)
                     {
-                        if (chunkParents[j].Value != chunkPreviousParents[j].Value)
+                        if (chunkParents[j] != chunkPreviousParents[j])
                         {
                             var childEntity = chunkEntities[j];
-                            var parentEntity = chunkParents[j].Value;
-                            var previousParentEntity = chunkPreviousParents[j].Value;
+                            var parentEntity = chunkParents[j];
+                            var previousParentEntity = chunkPreviousParents[j];
 
                             ParentChildrenToAdd.Add(parentEntity, childEntity);
                             UniqueParents.TryAdd(parentEntity, 0);
@@ -135,7 +135,7 @@ namespace DOTSHexagonsV2
             {
                 for (int i = 0; i < children.Length; i++)
                 {
-                    if (children[i].Value == entity)
+                    if (children[i] == entity)
                         return i;
                 }
 
@@ -236,7 +236,7 @@ namespace DOTSHexagonsV2
             for (int i = 0; i < childEntities.Length; i++)
             {
                 var childEntity = childEntities[i];
-                var previousParentEntity = previousParents[i].Value;
+                var previousParentEntity = previousParents[i];
 
                 RemoveChildFromParent(childEntity, previousParentEntity);
             }

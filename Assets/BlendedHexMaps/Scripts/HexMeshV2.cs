@@ -119,7 +119,7 @@ namespace DOTSHexagonsV2
 				NativeList<Entity> updatecellContainers = new NativeList<Entity>(cellContainers.Length, Allocator.Temp);
 				for (int cC = 0; cC < cellContainers.Length; cC++)
 				{
-					Entity cellContainer = cellContainers[cC].Value;
+					Entity cellContainer = cellContainers[cC];
 					NativeList<PossibleFeaturePosition> Elements = new NativeList<PossibleFeaturePosition>(8, Allocator.Temp);
 					for (int j = 0; j < features.Length; j++)
 					{

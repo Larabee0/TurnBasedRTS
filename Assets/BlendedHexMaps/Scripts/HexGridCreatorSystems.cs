@@ -27,7 +27,7 @@ namespace DOTSHexagonsV2
             ecbEndSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
             ecbBeginSystem = World.GetOrCreateSystem<BeginSimulationEntityCommandBufferSystem>();
 
-            column = EntityManager.CreateArchetype(typeof(HexGridChild), typeof(HexGridParent), typeof(HexColumn));
+            column = EntityManager.CreateArchetype(typeof(HexGridChild), typeof(HexGridParent), typeof(HexColumn), typeof(ColumnOffset));
             CreateGridColumnQuery = GetEntityQuery(new EntityQueryDesc { All = new ComponentType[] { typeof(HexGridComponent), typeof(HexGridUnInitialised) } });
         }
 
@@ -67,7 +67,7 @@ namespace DOTSHexagonsV2
                     {
                         Entity newColumn = ecbBegin.CreateEntity(batchIndex ^ col + i, column);
                         ecbBegin.SetComponent(batchIndex ^ col + i, newColumn, new HexGridParent { Value = comp.gridEntity });
-                        ecbBegin.SetComponent(batchIndex ^ col + i, newColumn, new HexColumn { columnIndex = col });
+                        ecbBegin.SetComponent(batchIndex ^ col + i, newColumn, new HexColumn { Value = col });
                     }
                     ecbEnd.RemoveComponent<HexGridUnInitialised>(batchIndex ^ i, comp.gridEntity);
                     ecbBegin.AddComponent<GridWithColumns>(batchIndex ^ i, comp.gridEntity);
@@ -154,8 +154,8 @@ namespace DOTSHexagonsV2
             {
                 for (int i = 0; i < columns.Length; i++)
                 {
-                    Entity col = columns[i].Value;
-                    if (columnDataFromEntity[col].columnIndex == x)
+                    Entity col = columns[i];
+                    if (columnDataFromEntity[col] == x)
                     {
                         return col;
                     }
@@ -232,20 +232,18 @@ namespace DOTSHexagonsV2
                     DynamicBuffer<HexGridChild> gridChildren = childFromEntity[comp.gridEntity];
                     for (int i = 0; i < gridChildren.Length; i++)
                     {
-                        Entity column = gridChildren[i].Value;
+                        Entity column = gridChildren[i];
                         DynamicBuffer<HexGridChild> columnChunks = childFromEntity[column];
                         for (int c = 0; c < columnChunks.Length; c++)
                         {
-                            int chunkIndex = hgCCFromEntity[columnChunks[c].Value].chunkIndex;
+                            int chunkIndex = hgCCFromEntity[columnChunks[c]].chunkIndex;
                             HexGridChunkBuffer chunkOnGrid = gridChunkBuffer[chunkIndex];
-                            chunkOnGrid.ChunkEntity = columnChunks[c].Value;
+                            chunkOnGrid.ChunkEntity = columnChunks[c];
                             gridChunkBuffer[chunkIndex] = chunkOnGrid;
                         }
                     }
 
                     NativeArray<HexCell> cells = new NativeArray<HexCell>(cellCountZ * cellCountX, Allocator.Temp);
-
-
 
                     for (int i = 0, z = 0; z < cellCountZ; z++)
                     {

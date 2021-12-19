@@ -4,7 +4,6 @@ using UnityEngine;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Jobs;
-using Unity.Transforms;
 using Unity.Collections;
 using UnityEngine.Rendering;
 using Unity.Burst;
@@ -24,7 +23,9 @@ namespace DOTSHexagonsV2
 
 
         public Transform GridContainer;
-        public List<HexGridChunk> GridChunk = new List<HexGridChunk>();
+        public List<HexGridChunk> GridChunks = new List<HexGridChunk>();
+        public Dictionary<int, HexGridChunk> GridChunksDict = new Dictionary<int, HexGridChunk>();
+        public List<HexGridColumn> GridColumns = new List<HexGridColumn>();
 
         public int cellCountX = 20;
         public int cellCountZ = 15;
@@ -32,7 +33,6 @@ namespace DOTSHexagonsV2
         private int chunkCountZ;
 
         public bool wrapping;
-        public float startTime;
         private void Awake()
         {
             mainWorld = World.DefaultGameObjectInjectionWorld;
@@ -43,44 +43,24 @@ namespace DOTSHexagonsV2
             entityWorldGridAPI.gameObjectWorld = Instance = this;
         }
 
-        void Start()
-        {
-
-        }
-
         void Update()
         {
             if (ActiveGridEntity != Entity.Null)
             {
                 InitialiseGrid(ActiveGridEntity);
-                Debug.Log("Repaint Job scheduled for next frame. " + (UnityEngine.Time.realtimeSinceStartup - startTime) * 1000f + "ms");
+                Debug.Log("Repaint Job scheduled for next frame.");
                 enabled = false;
             }
-            //if (Input.GetKeyUp(KeyCode.C))
-            //{
-            //    startTime = Time.realtimeSinceStartup;
-            //    Entity gridEntity = entityManager.CreateEntity(typeof(HexGridComponent), typeof(HexGridChild), typeof(HexCell), typeof(HexGridChunkBuffer), typeof(HexGridUnInitialised), typeof(HexHash));
-            //    ActiveGridEntity = gridEntity;
-            //    CreateMapDataFullJob(gridEntity, 5, 32, 24, true);
-            //}
         }
 
         public void InitialiseGrid(Entity grid)
         {
-            HexGridComponent HexComp = entityManager.GetComponentData<HexGridComponent>(grid);
+            HexGridComponent hexGridComp = entityManager.GetComponentData<HexGridComponent>(grid);
+            DynamicBuffer<HexGridChild> columnBuffer = entityManager.GetBuffer<HexGridChild>(grid);
             DynamicBuffer<HexGridChunkBuffer> chunkBuffer = entityManager.GetBuffer<HexGridChunkBuffer>(grid);
 
-            if (GridChunk.Count != chunkBuffer.Length)
-            {
-                CreateOrModifyGrid(chunkBuffer);
-            }
-            else
-            {
-                for (int i = 0; i < GridChunk.Count; i++)
-                {
-                    GridChunk[i].ChunkIndex = chunkBuffer[i].ChunkIndex;
-                }
-            }
+            CreateOrModifyGrid(hexGridComp, columnBuffer);
+
             for (int i = 0; i < chunkBuffer.Length; i++)
             {
                 HexGridChunkComponent comp = entityManager.GetComponentData<HexGridChunkComponent>(chunkBuffer[i].ChunkEntity);
@@ -97,44 +77,82 @@ namespace DOTSHexagonsV2
             }
         }
 
-        private void CreateOrModifyGrid(DynamicBuffer<HexGridChunkBuffer> chunkBuffer)
+        private void CreateOrModifyGrid(HexGridComponent hexGridComp, DynamicBuffer<HexGridChild> columns)
         {
-            if (GridChunk.Count < chunkBuffer.Length)
+            if (GridColumns.Count == 0)
             {
-                int i = 0;
-                for (; i < GridChunk.Count; i++)
+                HexGridColumn col = Instantiate(internalPrefabs.GridColumnPrefab, GridContainer.transform);
+                for (int i = 0; i < hexGridComp.chunkCountZ; i++)
                 {
-                    GridChunk[i].ChunkIndex = chunkBuffer[i].ChunkIndex;
+                    col.AddChunkToColumn(Instantiate(internalPrefabs.GridChunkPrefab));
                 }
+                GridColumns.Add(col);
+            }
 
-                for (; i < chunkBuffer.Length; i++)
+            if (hexGridComp.chunkCountX < GridColumns.Count) // remove extra chunks
+            {
+                for (int i = GridColumns.Count - 1; i > hexGridComp.chunkCountX; i++)
                 {
-                    GridChunk.Add(Instantiate(internalPrefabs.GridChunkPrefab, GridContainer));
-                    GridChunk[i].ChunkIndex = chunkBuffer[i].ChunkIndex;
+                    Destroy(GridColumns[i].gameObject);
                 }
             }
-            else if (GridChunk.Count > chunkBuffer.Length)
+            if (hexGridComp.chunkCountZ > chunkCountZ) // columns need AdditionalChunks
             {
-                for (int i = GridChunk.Count - 1; i > chunkBuffer.Length - 1; i++)
+                int difference = hexGridComp.chunkCountZ - chunkCountZ;
+                for (int i = 0; i < GridColumns.Count; i++)
                 {
-                    Destroy(GridChunk[i].gameObject);
-                    GridChunk.RemoveAt(i);
-                }
-
-                for (int i = 0; i < GridChunk.Count; i++)
-                {
-                    GridChunk[i].ChunkIndex = chunkBuffer[i].ChunkIndex;
+                    HexGridColumn col = GridColumns[i];
+                    for (int d = 0; d < difference; d++)
+                    {
+                        col.AddChunkToColumn(Instantiate(internalPrefabs.GridChunkPrefab));
+                    }
                 }
             }
+            else if (hexGridComp.chunkCountZ < chunkCountZ) // columns need ChunksRemoving
+            {
+                for (int i = 0; i < GridColumns.Count; i++)
+                {
+                    GridColumns[i].TrimColumnsTo(chunkCountZ);
+                }
+            }
+            if (hexGridComp.chunkCountX > GridColumns.Count)
+            {
+                HexGridColumn col = GridColumns[0];
+                int i = GridColumns.Count;
+                for (; i < hexGridComp.chunkCountX; i++)
+                {
+                    GridColumns.Add(Instantiate(col, GridContainer.transform));
+                }
+            }
+            // reset the chunkList
+            GridChunks.Clear();
+            GridChunksDict.Clear();
+            for (int i = 0; i < columns.Length; i++)
+            {
+                Entity columnEntity = columns[i];
+                GridColumns[i].ColumnIndex = entityManager.GetComponentData<HexColumn>(columnEntity);
+                DynamicBuffer<HexGridChild> chunks = entityManager.GetBuffer<HexGridChild>(columnEntity);
+                for (int c = 0; c < chunks.Length; c++)
+                {
+                    int index = entityManager.GetComponentData<HexGridChunkComponent>(chunks[c]).chunkIndex;
+                    HexGridChunk chunk = GridColumns[i].chunks[c];
+                    chunk.ChunkIndex = index;
+                    GridChunksDict.Add(index, chunk);
+                    GridChunks.Add(chunk);
+                }
+            }
+            // sort lists by chunk/column index
+            GridColumns.Sort();
+            GridChunks.Sort();
         }
 
         private void DestroyGrid()
         {
-            for (int i = 0; i < GridChunk.Count; i++)
+            for (int i = 0; i < GridChunks.Count; i++)
             {
-                Destroy(GridChunk[i].gameObject);
+                Destroy(GridChunks[i].gameObject);
             }
-            GridChunk.Clear();
+            GridChunks.Clear();
         }
 
         public bool CreateMapDataFullJob(Entity grid, uint seed, int x, int z, bool wrapping)
@@ -170,6 +188,34 @@ namespace DOTSHexagonsV2
             hasGrid.Dispose();
             return true;
         }
+
+        public void DebugMeshSet()
+        {
+            DynamicBuffer<HexGridChunkBuffer> chunkBuffer = entityManager.GetBuffer<HexGridChunkBuffer>(ActiveGridEntity);
+            HexGridChunkComponent chunkComp = entityManager.GetComponentData<HexGridChunkComponent>(chunkBuffer[0].ChunkEntity);
+
+            Vector3[] vertices = entityManager.GetBuffer<HexGridVertex>(chunkComp.entityTerrian).Reinterpret<Vector3>().AsNativeArray().ToArray();
+            Vector3[] Indices = entityManager.GetBuffer<HexGridIndices>(chunkComp.entityTerrian).Reinterpret<Vector3>().AsNativeArray().ToArray();
+            Color[] colours = entityManager.GetBuffer<HexGridWeights>(chunkComp.entityTerrian).Reinterpret<Color>().AsNativeArray().ToArray();
+            uint[] trianglesUint = entityManager.GetBuffer<HexGridTriangles>(chunkComp.entityTerrian).Reinterpret<uint>().AsNativeArray().ToArray();
+            int[] triangles = new int[trianglesUint.Length];
+            for (int i = 0; i < triangles.Length; i++)
+            {
+                triangles[i] = (int)trianglesUint[i];
+            }
+
+            Mesh terrianMesh = new Mesh();
+            terrianMesh.Clear();
+
+            terrianMesh.SetVertices(vertices);
+            terrianMesh.SetColors(colours);
+            terrianMesh.SetUVs(2, Indices);
+            terrianMesh.SetTriangles(triangles, 0);
+
+            terrianMesh.RecalculateNormals();
+            GridChunks[0].TerrianMesh = terrianMesh;
+            Debug.Log("Debug mesh repaint");
+        }
     }
 
 
@@ -181,6 +227,7 @@ namespace DOTSHexagonsV2
         public BeginSimulationEntityCommandBufferSystem ecbBeginSystem;
 
         private EntityQuery repaintChunkQuery;
+        private EntityQuery hexColumnQuery;
 
         public GridAPI gameObjectWorld;
 
@@ -189,18 +236,41 @@ namespace DOTSHexagonsV2
             ecbEndSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
             ecbBeginSystem = World.GetOrCreateSystem<BeginSimulationEntityCommandBufferSystem>();
             repaintChunkQuery = GetEntityQuery(new EntityQueryDesc { All = new ComponentType[] { typeof(HexRenderer), typeof(RepaintNow), typeof(RepaintScheduled) } });
+            hexColumnQuery = GetEntityQuery(new EntityQueryDesc { All = new ComponentType[] { typeof(HexColumn), typeof(ColumnOffset) } });
         }
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
+            JobHandle outputDeps = inputDeps;
+            if (!repaintChunkQuery.IsEmpty)
+            {
+                outputDeps = MeshStuff(inputDeps);
+            }
+            if (!hexColumnQuery.IsEmpty)
+            {
+                DynamicBuffer<HexGridChild> children = EntityManager.GetBuffer<HexGridChild>(GridAPI.ActiveGridEntity);
+                for (int i = 0; i < children.Length; i++)
+                {
+                    Entity colEntity = children[i];
+                    int columnIndex = EntityManager.GetComponentData<HexColumn>(colEntity);
+                    Vector3 columnPosition = EntityManager.GetComponentData<ColumnOffset>(colEntity);
+                    gameObjectWorld.GridColumns[columnIndex].transform.position = columnPosition;
+                }
+            }
+
+            return outputDeps;
+        }
+
+
+        private JobHandle MeshStuff(JobHandle inputDeps)
+        {
+            float startTime = UnityEngine.Time.realtimeSinceStartup;
             Mesh.MeshDataArray meshes = Mesh.AllocateWritableMeshData(repaintChunkQuery.CalculateEntityCount());
             NativeArray<HexRenderer> renderers = repaintChunkQuery.ToComponentDataArray<HexRenderer>(Allocator.Temp);
             NativeArray<HexMeshIndex> meshIndices = new NativeArray<HexMeshIndex>(meshes.Length, Allocator.Temp);
             for (int i = 0; i < meshIndices.Length; i++)
             {
-                HexMeshIndex meshIndex = meshIndices[i];
-                meshIndex.Value = i;
-                meshIndices[i] = meshIndex;
+                meshIndices[i] = i;
             }
             EntityManager.AddComponentData(repaintChunkQuery, meshIndices);
             WriteMapMeshData meshWriteJob = new WriteMapMeshData
@@ -224,53 +294,55 @@ namespace DOTSHexagonsV2
             MidRunHandle.Complete();
 
             Mesh[] updatedMeshes = new Mesh[meshes.Length];
-            for (int i = 0; i < meshes.Length; i++)
-            {
-                updatedMeshes[i] = new Mesh();
-            }
-            Mesh.ApplyAndDisposeWritableMeshData(meshes, updatedMeshes);
-
-            List<HexGridChunk> chunks = gameObjectWorld.GridChunk;
-
+            Dictionary<int, HexGridChunk> chunks = gameObjectWorld.GridChunksDict;
             for (int i = 0; i < renderers.Length; i++)
             {
                 HexRenderer renderer = renderers[i];
-                Mesh mesh = updatedMeshes[meshIndices[i].Value];
-                mesh.RecalculateNormals();
-                mesh.RecalculateBounds();
                 HexGridChunk chunk = chunks[renderer.ChunkIndex];
                 switch (renderer.rendererID)
                 {
                     case RendererID.Terrian:
-                        chunk.TerrianMesh = mesh;
+                        updatedMeshes[meshIndices[i]] = chunk.TerrianMesh;
                         break;
                     case RendererID.River:
-                        chunk.RiverMesh = mesh;
+                        updatedMeshes[meshIndices[i]] = chunk.RiverMesh;
                         break;
                     case RendererID.Water:
-                        chunk.WaterMesh = mesh;
+                        updatedMeshes[meshIndices[i]] = chunk.WaterMesh;
                         break;
                     case RendererID.WaterShore:
-                        chunk.WaterShoreMesh = mesh;
+                        updatedMeshes[meshIndices[i]] = chunk.WaterShoreMesh;
                         break;
                     case RendererID.Estuaries:
-                        chunk.EstuariesMesh = mesh;
+                        updatedMeshes[meshIndices[i]] = chunk.EstuariesMesh;
                         break;
                     case RendererID.Roads:
-                        chunk.RoadsMesh = mesh;
+                        updatedMeshes[meshIndices[i]] = chunk.RoadsMesh;
                         break;
                     case RendererID.Walls:
-                        chunk.WallsMesh = mesh;
+                        updatedMeshes[meshIndices[i]] = chunk.WallsMesh;
                         break;
                 }
+                updatedMeshes[meshIndices[i]].Clear();
             }
 
-            Debug.Log("Repaint Job Run, total time since start:" + (UnityEngine.Time.realtimeSinceStartup - gameObjectWorld.startTime) * 1000f + "ms");
-            return inputDeps;
+            Mesh.ApplyAndDisposeWritableMeshData(meshes, updatedMeshes);
+
+            for (int i = 0; i < updatedMeshes.Length; i++)
+            {
+                updatedMeshes[i].RecalculateNormals();
+                updatedMeshes[i].RecalculateBounds();
+                updatedMeshes[i].MarkModified();
+                updatedMeshes[i].UploadMeshData(false);
+            }
+
+            Debug.Log("Repaint Job Run, total time since start:" + (UnityEngine.Time.realtimeSinceStartup - startTime) * 1000f + "ms");
+
+            return MidRunHandle;
         }
 
         [BurstCompile]
-        private struct WriteMapMeshData : IJobEntityBatchWithIndex
+        private struct WriteMapMeshData : IJobEntityBatch
         {
             [ReadOnly]
             public BufferTypeHandle<HexGridVertex> verticesTypeHandle;
@@ -299,7 +371,7 @@ namespace DOTSHexagonsV2
 
             public EntityCommandBuffer.ParallelWriter ecbEnd;
 
-            public void Execute(ArchetypeChunk batchInChunk, int batchIndex, int index)
+            public void Execute(ArchetypeChunk batchInChunk, int batchIndex)
             {
                 NativeArray<Entity> entities = batchInChunk.GetNativeArray(entityTypeHandle);
                 NativeArray<HexRenderer> hexRenderers = batchInChunk.GetNativeArray(rendererTypeHandle);
@@ -312,7 +384,7 @@ namespace DOTSHexagonsV2
                     HexRenderer hexRenderer = hexRenderers[i];
                     DynamicBuffer<HexGridVertex> verticesDB = verticesBA[i];
                     DynamicBuffer<HexGridTriangles> trianglesDB = trianglesBA[i];
-                    int meshIndex = meshIndices[i].Value;
+                    int meshIndex = meshIndices[i];
                     if (hexRenderer.rendererID != RendererID.Walls)
                     {
                         BufferAccessor<HexGridWeights> weightsBA = batchInChunk.GetBufferAccessor(weightsTypeHandle);
@@ -333,7 +405,7 @@ namespace DOTSHexagonsV2
                             meshData.GetVertexData<HexGridIndices>(2).CopyFrom(cellIndicesBA[i].AsNativeArray());
                             meshData.GetIndexData<HexGridTriangles>().CopyFrom(trianglesDB.AsNativeArray());
                             meshData.subMeshCount = 1;
-                            meshData.SetSubMesh(0, new SubMeshDescriptor(0, trianglesDB.Length, MeshTopology.Triangles), MeshUpdateFlags.Default);
+                            meshData.SetSubMesh(0, new SubMeshDescriptor(0, trianglesDB.Length, MeshTopology.Triangles), MeshUpdateFlags.DontValidateIndices|MeshUpdateFlags.DontRecalculateBounds);
                         }
                         else if (hexRenderer.rendererID == RendererID.Estuaries) // MeshData2UV
                         {
@@ -354,7 +426,7 @@ namespace DOTSHexagonsV2
                             meshData.GetVertexData<HexGridUV4>(3).CopyFrom(uv4BA[i].AsNativeArray());
                             meshData.GetIndexData<HexGridTriangles>().CopyFrom(trianglesDB.AsNativeArray());
                             meshData.subMeshCount = 1;
-                            meshData.SetSubMesh(0, new SubMeshDescriptor(0, trianglesDB.Length, MeshTopology.Triangles));
+                            meshData.SetSubMesh(0, new SubMeshDescriptor(0, trianglesDB.Length, MeshTopology.Triangles), MeshUpdateFlags.DontValidateIndices | MeshUpdateFlags.DontRecalculateBounds);
                         }
                         else // MeshDataUV
                         {
@@ -374,7 +446,7 @@ namespace DOTSHexagonsV2
                             meshData.GetVertexData<HexGridUV2>(3).CopyFrom(uv2BA[i].AsNativeArray());
                             meshData.GetIndexData<HexGridTriangles>().CopyFrom(trianglesDB.AsNativeArray());
                             meshData.subMeshCount = 1;
-                            meshData.SetSubMesh(0, new SubMeshDescriptor(0, trianglesDB.Length, MeshTopology.Triangles));
+                            meshData.SetSubMesh(0, new SubMeshDescriptor(0, trianglesDB.Length, MeshTopology.Triangles), MeshUpdateFlags.DontValidateIndices | MeshUpdateFlags.DontRecalculateBounds);
                         }
                     }
                     else // MeshBasic (walls)
@@ -387,7 +459,7 @@ namespace DOTSHexagonsV2
                         meshData.GetVertexData<HexGridVertex>(0).CopyFrom(verticesDB.AsNativeArray());
                         meshData.GetIndexData<HexGridTriangles>().CopyFrom(trianglesDB.AsNativeArray());
                         meshData.subMeshCount = 1;
-                        meshData.SetSubMesh(0, new SubMeshDescriptor(0, trianglesDB.Length, MeshTopology.Triangles));
+                        meshData.SetSubMesh(0, new SubMeshDescriptor(0, trianglesDB.Length, MeshTopology.Triangles), MeshUpdateFlags.DontValidateIndices | MeshUpdateFlags.DontRecalculateBounds);
                     }
 
                     ecbEnd.RemoveComponent<RepaintNow>(entities[i].Index, entities[i]);

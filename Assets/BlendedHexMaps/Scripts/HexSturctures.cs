@@ -15,6 +15,8 @@ namespace DOTSHexagonsV2
     {
 		public static implicit operator float3(HexGridVertex v) { return v.Value; }
 		public static implicit operator HexGridVertex(float3 v) { return new HexGridVertex { Value = v }; }
+		public static implicit operator Vector3(HexGridVertex v) { return v.Value; }
+		public static implicit operator HexGridVertex(Vector3 v) { return new HexGridVertex { Value = v }; }
 		public float3 Value;
 	}
 	public struct HexGridTriangles : IBufferElementData
@@ -28,12 +30,20 @@ namespace DOTSHexagonsV2
 	{
 		public static implicit operator float3(HexGridIndices v) { return v.Value; }
 		public static implicit operator HexGridIndices(float3 v) { return new HexGridIndices { Value = v }; }
+		public static implicit operator Vector3(HexGridIndices v) { return v.Value; }
+		public static implicit operator HexGridIndices(Vector3 v) { return new HexGridIndices { Value = v }; }
 		public float3 Value;
     }
 	public struct HexGridWeights : IBufferElementData
 	{
 		public static implicit operator float4(HexGridWeights v) { return v.Value; }
 		public static implicit operator HexGridWeights(float4 v) { return new HexGridWeights { Value = v }; }
+		public static implicit operator Vector4(HexGridWeights v) { return v.Value; }
+		public static implicit operator HexGridWeights(Vector4 v) { return new HexGridWeights { Value = v }; }
+		public static implicit operator Color(HexGridWeights v) { return (Vector4)v.Value; }
+		public static implicit operator HexGridWeights(Color v) { return new HexGridWeights { Value = (Vector4)v }; }
+
+
 		public float4 Value;
 	}
 
@@ -41,19 +51,35 @@ namespace DOTSHexagonsV2
 	{
 		public static implicit operator float2(HexGridUV2 v) { return v.Value; }
 		public static implicit operator HexGridUV2(float2 v) { return new HexGridUV2 { Value = v }; }
+		public static implicit operator Vector2(HexGridUV2 v) { return v.Value; }
+		public static implicit operator HexGridUV2(Vector2 v) { return new HexGridUV2 { Value = v }; }
 		public float2 Value;
 	}
 	public struct HexGridUV4 : IBufferElementData
 	{
 		public static implicit operator float4(HexGridUV4 v) { return v.Value; }
 		public static implicit operator HexGridUV4(float4 v) { return new HexGridUV4 { Value = v }; }
+		public static implicit operator Vector4(HexGridUV4 v) { return v.Value; }
+		public static implicit operator HexGridUV4(Vector4 v) { return new HexGridUV4 { Value = v }; }
 		public float4 Value;
 	}
 
 
 	public struct CentreMap : IComponentData
 	{
-		public float value;
+		public static implicit operator float(CentreMap v) { return v.Value; }
+		public static implicit operator CentreMap(float v) { return new CentreMap { Value = v }; }
+		public float Value;
+	}
+
+	public struct ColumnOffset : IComponentData
+    {
+		public static implicit operator float3(ColumnOffset v) { return v.Value; }
+		public static implicit operator ColumnOffset(float3 v) { return new ColumnOffset { Value = v }; }
+		public static implicit operator Vector3(ColumnOffset v) { return v.Value; }
+		public static implicit operator ColumnOffset(Vector3 v) { return new ColumnOffset { Value = v }; }
+
+		public float3 Value;
 	}
 
 	public struct HexGridComponent : IComponentData
@@ -79,7 +105,9 @@ namespace DOTSHexagonsV2
 	}
 
 	public struct HexMeshIndex : IComponentData
-    {
+	{
+		public static implicit operator int(HexMeshIndex v) { return v.Value; }
+		public static implicit operator HexMeshIndex(int v) { return new HexMeshIndex { Value = v }; }
 		public int Value;
     }
 
@@ -142,22 +170,195 @@ namespace DOTSHexagonsV2
 
 	public struct HexColumn : IComponentData
 	{
-		public int columnIndex;
+		public static implicit operator int(HexColumn v) { return v.Value; }
+		public static implicit operator HexColumn(int v) { return new HexColumn { Value = v }; }
+		public int Value;
 	}
 
 	public struct HexGridParent : IComponentData
-    {
+	{
+		public static implicit operator Entity(HexGridParent v) { return v.Value; }
+		public static implicit operator HexGridParent(Entity v) { return new HexGridParent { Value = v }; }
 		public Entity Value;
-    }
+
+		public static bool operator ==(HexGridParent lhs, HexGridParent rhs)
+		{
+			if (lhs.Value == rhs.Value)
+			{
+				return true;
+			}
+
+			return false;
+		}
+
+		public static bool operator !=(HexGridParent lhs, HexGridParent rhs)
+		{
+			return !(lhs == rhs);
+		}
+
+		public static bool operator ==(HexGridParent lhs, HexGridPreviousParent rhs)
+		{
+			if (lhs.Value == rhs.Value)
+			{
+				return true;
+			}
+
+			return false;
+		}
+
+		public static bool operator !=(HexGridParent lhs, HexGridPreviousParent rhs)
+		{
+			return !(lhs == rhs);
+		}
+		public static bool operator ==(HexGridParent lhs, Entity rhs)
+		{
+			if (lhs.Value == rhs)
+			{
+				return true;
+			}
+
+			return false;
+		}
+
+		public static bool operator !=(HexGridParent lhs, Entity rhs)
+		{
+			return !(lhs == rhs);
+		}
+
+		public override bool Equals(object compare)
+		{
+			return this == (Entity)compare;
+		}
+
+		public override int GetHashCode()
+		{
+			return Value.GetHashCode();
+		}
+
+		public override string ToString()
+		{
+			return Value.ToString();
+		}
+	}
 
 	public struct HexGridPreviousParent : IComponentData
 	{
+		public static implicit operator Entity(HexGridPreviousParent v) { return v.Value; }
+		public static implicit operator HexGridPreviousParent(Entity v) { return new HexGridPreviousParent { Value = v }; }
 		public Entity Value;
+
+		public static bool operator ==(HexGridPreviousParent lhs, HexGridPreviousParent rhs)
+		{
+			if (lhs.Value == rhs.Value)
+			{
+				return true;
+			}
+
+			return false;
+		}
+
+		public static bool operator !=(HexGridPreviousParent lhs, HexGridPreviousParent rhs)
+		{
+			return !(lhs == rhs);
+		}
+
+		public static bool operator ==(HexGridPreviousParent lhs, HexGridParent rhs)
+		{
+			if (lhs.Value == rhs.Value)
+			{
+				return true;
+			}
+
+			return false;
+		}
+
+		public static bool operator !=(HexGridPreviousParent lhs, HexGridParent rhs)
+		{
+			return !(lhs == rhs);
+		}
+
+		public static bool operator ==(HexGridPreviousParent lhs, Entity rhs)
+		{
+			if (lhs.Value == rhs)
+			{
+				return true;
+			}
+
+			return false;
+		}
+
+		public static bool operator !=(HexGridPreviousParent lhs, Entity rhs)
+		{
+			return !(lhs == rhs);
+		}
+
+		public override bool Equals(object compare)
+		{
+			return this == (Entity)compare;
+		}
+
+		public override int GetHashCode()
+		{
+			return Value.GetHashCode();
+		}
+
+		public override string ToString()
+		{
+			return Value.ToString();
+		}
 	}
 
 	public struct HexGridChild : IBufferElementData
-    {
+	{
+		public static implicit operator Entity(HexGridChild v) { return v.Value; }
+		public static implicit operator HexGridChild(Entity v) { return new HexGridChild { Value = v }; }
 		public Entity Value;
+
+
+		public static bool operator ==(HexGridChild lhs, HexGridChild rhs)
+		{
+			if (lhs.Value == rhs.Value)
+			{
+				return true;
+			}
+
+			return false;
+		}
+
+		public static bool operator !=(HexGridChild lhs, HexGridChild rhs)
+		{
+			return !(lhs == rhs);
+		}
+
+		public static bool operator ==(HexGridChild lhs, Entity rhs)
+		{
+			if (lhs.Value == rhs)
+			{
+				return true;
+			}
+
+			return false;
+		}
+
+		public static bool operator !=(HexGridChild lhs, Entity rhs)
+		{
+			return !(lhs == rhs);
+		}
+
+        public override bool Equals(object compare)
+        {
+			return this == (Entity)compare;
+		}
+
+        public override int GetHashCode()
+        {
+            return Value.GetHashCode();
+        }
+
+        public override string ToString()
+        {
+            return Value.ToString();
+        }
     }
 
 
@@ -866,10 +1067,14 @@ namespace DOTSHexagonsV2
 	public struct NeedsVisibilityReset : IComponentData { }
 	public struct HexCellTextureDataBuffer : IBufferElementData
 	{
-		public Color32 celltextureData;
+		public static implicit operator Color32(HexCellTextureDataBuffer v) { return v.Value; }
+		public static implicit operator HexCellTextureDataBuffer(Color32 v) { return new HexCellTextureDataBuffer { Value = v }; }
+		public Color32 Value;
 	}
 	public struct HexCellTransitioningCells : IBufferElementData
 	{
-		public int transitioningCell;
+		public static implicit operator int(HexCellTransitioningCells v) { return v.Value; }
+		public static implicit operator HexCellTransitioningCells(int v) { return new HexCellTransitioningCells { Value = v }; }
+		public int Value;
 	}
 }

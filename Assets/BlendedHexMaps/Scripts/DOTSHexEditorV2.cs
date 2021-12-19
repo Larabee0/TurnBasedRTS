@@ -4,7 +4,6 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Physics.Systems;
-using Unity.Transforms;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -60,6 +59,7 @@ namespace DOTSHexagonsV2
 			chunksToUpdate = new NativeHashSet<Entity>(6, Allocator.Persistent);
 			ShowGrid(true);
 			SetEditMode(true);
+			Shader.EnableKeyword("BOOLEAN_B964DA9E23BC467FA33B192E46E0502F_ON");
 		}
 
 		public void HandleNewGrids()
@@ -112,7 +112,6 @@ namespace DOTSHexagonsV2
 		{
 			if (Input.GetKeyUp(KeyCode.C))
 			{
-				GridAPI.Instance.startTime = Time.realtimeSinceStartup;
 				for (int i = 0; i < 1; i++)
 				{
 					generator.GenerateMap(32, 24, true);
@@ -280,9 +279,9 @@ namespace DOTSHexagonsV2
 
 		private HexCell GetCellFromPosition(float3 point)
 		{
-			LocalToWorld gridTransform = entityManager.GetComponentData<LocalToWorld>(GridAPI.ActiveGridEntity);
+			Transform gridTransform = GridAPI.Instance.GridContainer;
 
-			float3 position = math.transform(math.inverse(gridTransform.Value), point);
+			float3 position = math.transform(math.inverse(gridTransform.worldToLocalMatrix), point);
 			HexCoordinates coordinates = HexCoordinates.FromPosition(position);
 			return GetCellFromCoordinates(coordinates);
 		}

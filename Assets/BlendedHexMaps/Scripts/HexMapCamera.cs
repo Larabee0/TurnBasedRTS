@@ -137,7 +137,7 @@ namespace DOTSHexagonsV2
 
             position.z = math.clamp(position.z, 0f, zMax);
 
-            entityManager.AddComponentData(GridAPI.ActiveGridEntity, new CentreMap { value = position.x });
+            entityManager.AddComponentData(GridAPI.ActiveGridEntity, new CentreMap { Value = position.x });
             return position;
         }
 
