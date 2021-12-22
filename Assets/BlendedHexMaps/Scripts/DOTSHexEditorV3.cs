@@ -9,9 +9,9 @@ using UnityEngine.EventSystems;
 
 namespace DOTSHexagonsV2
 {
-    public class DOTSHexEditorV2 : MonoBehaviour
+    public class DOTSHexEditorV3 : MonoBehaviour
     {
-		public static DOTSHexEditorV2 Instance;
+		public static DOTSHexEditorV3 Instance;
 		public static List<Entity> GridEntities = new List<Entity>();
 		int index = -1;
 		public HexMapGenerator generator;
@@ -34,7 +34,7 @@ namespace DOTSHexagonsV2
 		private int activePlantLevel;
 		private bool applyPlantLevel = false;
 		private int activeWaterLevel;
-		private bool applyWaterLevel = true;
+		private bool applyWaterLevel = false;
 		private int activeSpecialIndex;
 		private bool applySpecialIndex = false;
 
@@ -43,14 +43,20 @@ namespace DOTSHexagonsV2
 		private OptionalToggle walledMode;
 
 		private bool isDrag;
-		private HexDirection direction;
+		private HexDirection dragDirection;
 		private HexCell previousCell;
-		private NativeArray<HexCell> cells;
+		private DynamicBuffer<HexCell> cells;
 		private NativeArray<HexGridChunkBuffer> chunks;
 		private NativeHashSet<Entity> chunksToUpdate;
 
 		private void Awake()
 		{
+			applyElevation = false;
+			applyUrbanLevel = false;
+			applyFarmLevel = false;
+			applyPlantLevel = false;
+			applyWaterLevel = false;
+			applySpecialIndex = false;
 			Instance = this;
 			physicsWorld = World.DefaultGameObjectInjectionWorld.GetExistingSystem<BuildPhysicsWorld>();
 			commandBufferSystem = World.DefaultGameObjectInjectionWorld.GetExistingSystem<EndSimulationEntityCommandBufferSystem>();
@@ -137,9 +143,17 @@ namespace DOTSHexagonsV2
 			CreateNewGrid();
 			if (Input.GetMouseButton(0) && !EventSystem.current.IsPointerOverGameObject())
 			{
-				PreInputActions();
 				HandleInput();
-				PostInputActions();
+                if (chunksToUpdate.Count() > 0)
+                {
+					NativeArray<Entity> chunksToUpdateArray = chunksToUpdate.ToNativeArray(Allocator.Temp);
+					chunksToUpdate.Clear();
+					entityManager.AddComponent<RefreshChunk>(chunksToUpdateArray);
+					Debug.Log("Refreshing " + chunksToUpdateArray.Length + " Chunks");
+					chunksToUpdateArray.Dispose();
+				}
+
+				chunks.Dispose();
 				return;
 			}
             if (Input.GetKeyUp(KeyCode.R))
@@ -159,32 +173,8 @@ namespace DOTSHexagonsV2
 			previousCell = HexCell.Null;
 		}
 
-		private void LateUpdate()
-		{
-			if (chunksToUpdate.Count() > 0 && Input.GetMouseButtonUp(0) || isDrag)
-			{
-				EntityCommandBuffer commandBuffer = commandBufferSystem.CreateCommandBuffer();
-				NativeArray<Entity> chunksToUpdateArray = chunksToUpdate.ToNativeArray(Allocator.Temp);
-				chunksToUpdate.Clear();
-
-				for (int i = 0; i < chunksToUpdateArray.Length; i++)
-				{
-					Debug.Log("Cunk entity " + chunksToUpdateArray[i].Index + " scheduled refresh at t = " + Time.realtimeSinceStartup);
-					commandBuffer.AddComponent<RefreshChunk>(chunksToUpdateArray[i]);
-				}
-
-				chunksToUpdateArray.Dispose();
-
-			}
-		}
-
 		private void OnDestroy()
 		{
-			try
-			{
-				cells.Dispose();
-			}
-			catch { }
 			try
 			{
 				chunks.Dispose();
@@ -197,18 +187,9 @@ namespace DOTSHexagonsV2
 			catch { }
 		}
 
-		private void PreInputActions()
-		{
-			cells = entityManager.GetBuffer<HexCell>(GridAPI.ActiveGridEntity).ToNativeArray(Allocator.Temp);
-			chunks = entityManager.GetBuffer<HexGridChunkBuffer>(GridAPI.ActiveGridEntity).ToNativeArray(Allocator.Temp);
+		public void GetGridData()
+        {
 			hexGridInfo = entityManager.GetComponentData<HexGridComponent>(GridAPI.ActiveGridEntity);
-		}
-
-		private void PostInputActions()
-		{
-			entityManager.GetBuffer<HexCell>(GridAPI.ActiveGridEntity).CopyFrom(cells);
-			cells.Dispose();
-			chunks.Dispose();
 		}
 
 		private void HandleInput()
@@ -230,11 +211,13 @@ namespace DOTSHexagonsV2
 
 		private HexCell GetCellUnderCursor()
 		{
+			cells = entityManager.GetBuffer<HexCell>(GridAPI.ActiveGridEntity);
+			chunks = entityManager.GetBuffer<HexGridChunkBuffer>(GridAPI.ActiveGridEntity).ToNativeArray(Allocator.Temp);
 			Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-			(bool hit, Unity.Physics.RaycastHit raycastHit) = PhysicsFunctions.RaycastHit(physicsWorld, ray.origin, ray.direction * 100, 100, ~0u, 100);
-			if (hit)
+			
+			if (Physics.Raycast(ray, out RaycastHit hit))
 			{
-				return GetCellFromPosition(raycastHit.Position);
+				return GetCellFromPosition(hit.point);
 			}
 
 			return HexCell.Null;
@@ -242,9 +225,9 @@ namespace DOTSHexagonsV2
 
 		private void ValidateDrag(HexCell currentCell)
 		{
-			for (direction = HexDirection.NE; direction <= HexDirection.NW; direction++)
+			for (dragDirection = HexDirection.NE; dragDirection <= HexDirection.NW; dragDirection++)
 			{
-				if (HexCell.GetNeighbourIndex(previousCell, direction) == currentCell.Index)
+				if (HexCell.GetNeighbourIndex(previousCell, dragDirection) == currentCell.Index)
 				{
 					isDrag = true;
 					return;
@@ -258,9 +241,9 @@ namespace DOTSHexagonsV2
 		{
 			cells[cell.Index] = cell;
 			chunksToUpdate.Add(chunks[cell.ChunkIndex].ChunkEntity);
-			for (direction = HexDirection.NE; direction <= HexDirection.NW; direction++)
+			for (dragDirection = HexDirection.NE; dragDirection <= HexDirection.NW; dragDirection++)
 			{
-				HexCell neighbour = HexCell.GetNeighbour(cell, cells, direction);
+				HexCell neighbour = HexCell.GetNeighbour(cell, cells, dragDirection);
 				if (!neighbour.Equals(HexCell.Null))
 				{
 					if (neighbour.ChunkIndex != cell.ChunkIndex)
@@ -281,8 +264,8 @@ namespace DOTSHexagonsV2
 		{
 			Transform gridTransform = GridAPI.Instance.GridContainer;
 
-			float3 position = math.transform(math.inverse(gridTransform.worldToLocalMatrix), point);
-			HexCoordinates coordinates = HexCoordinates.FromPosition(position);
+			float3 position = gridTransform.InverseTransformPoint(point);
+			HexCoordinates coordinates = HexCoordinates.FromPosition(position, hexGridInfo.wrapSize);
 			return GetCellFromCoordinates(coordinates);
 		}
 
@@ -327,9 +310,12 @@ namespace DOTSHexagonsV2
 			{
 				if (activeTerrianTypeIndex >= 0)
 				{
-					cell.terrianTypeIndex = activeTerrianTypeIndex;
-					cells[cell.Index] = cell;
-					shaderData.RefreshTerrian(cell);
+					if(cell.terrianTypeIndex != activeTerrianTypeIndex)
+					{
+						cell.terrianTypeIndex = activeTerrianTypeIndex;
+						cells[cell.Index] = cell;
+						shaderData.RefreshTerrian(cell);
+					}
 				}
 				if (applyElevation)
 				{
@@ -394,37 +380,52 @@ namespace DOTSHexagonsV2
 				}
 				if (riverMode == OptionalToggle.No)
 				{
-					cell = HexCell.RemoveOutgoingRiver(cells, cell);
-					cell = HexCell.RemoveIncomingRiver(cells, cell);
-					Refresh(cell);
+                    if (cell.HasRiver)
+					{
+						cell = HexCell.RemoveOutgoingRiver(cells, cell);
+						cell = HexCell.RemoveIncomingRiver(cells, cell);
+						Refresh(cell);
+					}
 				}
 				if (roadMode == OptionalToggle.No)
 				{
-					for (direction = HexDirection.NE; direction <= HexDirection.NW; direction++)
+                    if (cell.HasRoads)
 					{
-						cell.SetRoad(direction, false);
+						for (dragDirection = HexDirection.NE; dragDirection <= HexDirection.NW; dragDirection++)
+						{
+							cell.SetRoad(dragDirection, false);
+						}
+						Refresh(cell);
 					}
-					Refresh(cell);
 				}
 				if (walledMode != OptionalToggle.Ignore)
 				{
-					cell.Walled = walledMode == OptionalToggle.Yes;
-					Refresh(cell);
+					if(cell.Walled != (walledMode == OptionalToggle.Yes))
+                    {
+						cell.Walled = walledMode == OptionalToggle.Yes;
+						Refresh(cell);
+					}
 				}
 				if (isDrag)
 				{
-					HexCell otherCell = HexCell.GetNeighbour(cell, cells, direction.Opposite());
+					HexCell otherCell = HexCell.GetNeighbour(cell, cells, dragDirection.Opposite());
 					if (!otherCell.Equals(HexCell.Null))
 					{
 						if (riverMode == OptionalToggle.Yes)
 						{
-							otherCell = HexCell.SetOutgoingRiver(cells, otherCell, direction);
-							Refresh(otherCell);
+                            if (!HexCell.HasRiverThroughEdge(otherCell, dragDirection))
+							{
+								otherCell = HexCell.SetOutgoingRiver(cells, otherCell, dragDirection);
+								Refresh(otherCell);
+							}
 						}
 						if (roadMode == OptionalToggle.Yes)
 						{
-							otherCell = HexCell.SetRoad(cells, cell, direction);
-							Refresh(otherCell);
+							if (!HexCell.HasRoadThroughEdge(otherCell, dragDirection))
+							{
+								otherCell = HexCell.SetRoad(cells, otherCell, dragDirection);
+								Refresh(otherCell);
+							}
 						}
 					}
 				}

@@ -29,7 +29,7 @@ namespace DOTSHexagonsV2
 		[ReadOnly]
 		public BufferFromEntity<HexGridChild> childBufferType;
 		[ReadOnly]
-		public ComponentDataFromEntity<FeatureDataContainer> featureDataComponentType;
+		public ComponentDataFromEntity<FeatureGridEntities> featureDataComponentType;
 		[ReadOnly]
 		public ComponentDataFromEntity<HexGridComponent> gridDataComponentType;
 		[ReadOnly]
@@ -114,33 +114,9 @@ namespace DOTSHexagonsV2
 				estuaryMesh.Dispose();
 				roadMesh.Dispose();
 				wallMesh.Dispose();
-
-				DynamicBuffer<HexGridChild> cellContainers = childBufferType[chunkComp.FeatureContainer];
-				NativeList<Entity> updatecellContainers = new NativeList<Entity>(cellContainers.Length, Allocator.Temp);
-				for (int cC = 0; cC < cellContainers.Length; cC++)
-				{
-					Entity cellContainer = cellContainers[cC];
-					NativeList<PossibleFeaturePosition> Elements = new NativeList<PossibleFeaturePosition>(8, Allocator.Temp);
-					for (int j = 0; j < features.Length; j++)
-					{
-						if (features[j].cellIndex == featureDataComponentType[cellContainer].cellIndex)
-						{
-							Elements.Add(features[j]);
-						}
-					}
-					if (Elements.Length > 0)
-					{
-						ecbBegin.SetBuffer<PossibleFeaturePosition>(batchIndex, cellContainer).AddRange(Elements);
-						updatecellContainers.Add(cellContainer);
-					}
-					Elements.Dispose();
-				}
+				ecbBegin.SetBuffer<PossibleFeaturePosition>(batchIndex, chunkComp.FeatureContainer).CopyFrom(features);
 				features.Dispose();
-				for (int cCR = 0; cCR < updatecellContainers.Length; cCR++)
-				{
-					ecbBegin.AddComponent<RefreshCellFeatures>(batchIndex, updatecellContainers[cCR]);
-				}
-				updatecellContainers.Dispose();
+				ecbBegin.AddComponent<RefreshCellFeatures>(batchIndex, chunkComp.FeatureContainer);
 				ecbEnd.RemoveComponent<RefreshChunk>(batchIndex, chunkEntities[i]);
 			}
 		}
@@ -160,13 +136,13 @@ namespace DOTSHexagonsV2
 					switch (!cell.HasRiver && !cell.HasRoads)
 					{
 						case true:
-							AddFeature(features, cell.Index, cell.Position, 0f, FeatureCollection.None);
+							AddFeature(features, cell.Index, cell.Position, 0f, FeatureType.None);
 							break;
 					}
 					switch (cell.IsSpeical)
 					{
 						case true:
-							AddFeature(features, cell.Index, cell.Position, 0f, FeatureCollection.None);
+							AddFeature(features, cell.Index, cell.Position, 0f, FeatureType.Special);
 							break;
 					}
 					break;
@@ -205,7 +181,7 @@ namespace DOTSHexagonsV2
 					switch (!cell.IsUnderwater && !HexCell.HasRoadThroughEdge(cell, direction))
 					{
 						case true:
-							AddFeature(features, cell.Index, (centre + e.v1 + e.v5) * (1f / 3f), 0f, FeatureCollection.None);
+							AddFeature(features, cell.Index, (centre + e.v1 + e.v5) * (1f / 3f), 0f, FeatureType.None);
 							break;
 					}
 					break;
@@ -797,7 +773,7 @@ namespace DOTSHexagonsV2
 							switch (cell.IncomingRiver == direction.Next() && (HexCell.HasRoadThroughEdge(cell, direction.Next2()) || HexCell.HasRoadThroughEdge(cell, direction.Opposite())))
 							{
 								case true:
-									AddFeature(features, cell.Index, roadCentre, centre - corner * 0.5f, FeatureCollection.Bridge);
+									AddFeature(features, cell.Index, roadCentre, centre - corner * 0.5f, FeatureType.Bridge);
 									break;
 							}
 							centre += corner * 0.25f;
@@ -856,7 +832,7 @@ namespace DOTSHexagonsV2
 													switch (direction == middle && HexCell.HasRoadThroughEdge(cell, direction.Opposite()))
 													{
 														case true:
-															AddFeature(features, cell.Index, roadCentre, centre - offsetOther * (HexFunctions.innerToOuter * 0.7f), FeatureCollection.Bridge);
+															AddFeature(features, cell.Index, roadCentre, centre - offsetOther * (HexFunctions.innerToOuter * 0.7f), FeatureType.Bridge);
 															break;
 													}
 													break;
@@ -965,7 +941,7 @@ namespace DOTSHexagonsV2
 			switch (!cell.IsUnderwater && !HexCell.HasRoadThroughEdge(cell, direction))
 			{
 				case true:
-					AddFeature(features, cell.Index, (centre + e.v1 + e.v5) * (1f / 3f), 0f, FeatureCollection.None);
+					AddFeature(features, cell.Index, (centre + e.v1 + e.v5) * (1f / 3f), 0f, FeatureType.None);
 					break;
 			}
 		}
@@ -1453,7 +1429,7 @@ namespace DOTSHexagonsV2
 			{
 				float3 rightDirection = right - left;
 				rightDirection.y = 0f;
-				AddFeature(features, cellIndex, (left + right) * 0.5f, rightDirection, FeatureCollection.WallTower);
+				AddFeature(features, cellIndex, (left + right) * 0.5f, rightDirection, FeatureType.WallTower);
 			}
 		}
 
@@ -1587,7 +1563,7 @@ namespace DOTSHexagonsV2
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private void AddFeature(NativeList<PossibleFeaturePosition> features, int cellIndex, float3 position, float3 direction, FeatureCollection reservedFor)
+		private void AddFeature(NativeList<PossibleFeaturePosition> features, int cellIndex, float3 position, float3 direction, FeatureType reservedFor)
 		{
 			features.Add(new PossibleFeaturePosition { cellIndex = cellIndex, position = position, direction = direction, ReservedFor = reservedFor });
 		}

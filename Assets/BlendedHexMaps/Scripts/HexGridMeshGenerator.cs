@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 using Unity.Burst;
 namespace DOTSHexagonsV2
 {
+    [UpdateInGroup(typeof(HexGridV2SystemGroup))]
     public class HexGridMeshGenerator : JobComponentSystem
     {
         private EndSimulationEntityCommandBufferSystem commandBufferSystemEnd;
@@ -39,7 +40,7 @@ namespace DOTSHexagonsV2
                 hexCellBufferType = this.GetBufferFromEntity<HexCell>(true),
                 childBufferType = this.GetBufferFromEntity<HexGridChild>(true),
                 hexHashData = this.GetBufferFromEntity<HexHash>(true),
-                featureDataComponentType = this.GetComponentDataFromEntity<FeatureDataContainer>(true),
+                featureDataComponentType = this.GetComponentDataFromEntity<FeatureGridEntities>(true),
                 gridDataComponentType = this.GetComponentDataFromEntity<HexGridComponent>(true),
                 ecbBegin = commandBufferSystemBegin.CreateCommandBuffer().AsParallelWriter(),
                 ecbEnd = commandBufferSystemEnd.CreateCommandBuffer().AsParallelWriter(),

@@ -106,6 +106,7 @@ namespace DOTSHexagonsV2
             HexCellShaderDataComponent data = EntityManager.GetComponentData<HexCellShaderDataComponent>(HexCellShaderData);
             data.grid = Grid;
             GridAPI.ActiveGridEntity = Grid;
+            GridAPI.Instance.enabled = true;
             //HexMapCamera.ValidatePosition();
             EntityManager.SetComponentData(HexCellShaderData, data);
             NativeArray<HexCellTextureDataBuffer> cellTextureData = EntityManager.GetBuffer<HexCellTextureDataBuffer>(HexCellShaderData).ToNativeArray(Allocator.Temp);

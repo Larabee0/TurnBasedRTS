@@ -129,7 +129,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 673808731085589149}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 05b558d5d060a1d4eb91cd7c959ac40f, type: 3}
+  m_Script: {fileID: 11500000, guid: 0bc65d463d58cdd4484e71aca5dd8dd5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   terrianCollider: {fileID: 1157767965832170656}
@@ -140,8 +140,8 @@ MonoBehaviour:
   estuariesMesh: {fileID: 2968858258628838365}
   roadsMesh: {fileID: 2455875326950242392}
   wallsMesh: {fileID: 5204088778445423277}
-  ChunkIndex: 0
-  FeatureContainer: {fileID: 3874012365347411389}
+  ChunkIndex: -2147483648
+  FeatureContainer: {fileID: 1100058460550233698}
 --- !u!1 &673808732552603150
 GameObject:
   m_ObjectHideFlags: 0
@@ -236,7 +236,7 @@ MeshCollider:
   m_Enabled: 1
   serializedVersion: 4
   m_Convex: 0
-  m_CookingOptions: 30
+  m_CookingOptions: -1
   m_Mesh: {fileID: 0}
 --- !u!1 &1276720181454372580
 GameObject:
@@ -652,6 +652,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3874012365347411389}
+  - component: {fileID: 1100058460550233698}
   m_Layer: 6
   m_Name: Features
   m_TagString: Untagged
@@ -673,3 +674,16 @@ Transform:
   m_Father: {fileID: 673808731085589150}
   m_RootOrder: 7
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1100058460550233698
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8697103848410844961}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c22110572aba424abeebebd7cad8e81, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Features: []

@@ -103,11 +103,7 @@ namespace GameObjectHexagons
 
 		private void ValidateDrag(HexCell currentCell)
 		{
-			for (
-				dragDirection = HexDirection.NE;
-				dragDirection <= HexDirection.NW;
-				dragDirection++
-			)
+			for (dragDirection = HexDirection.NE; dragDirection <= HexDirection.NW; dragDirection++)
 			{
 				if (previousCell.GetNeighbour(dragDirection) == currentCell)
 				{

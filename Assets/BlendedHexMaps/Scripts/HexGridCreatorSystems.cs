@@ -428,6 +428,7 @@ namespace DOTSHexagonsV2
                 cellBuffer = GetBufferTypeHandle<HexGridCellBuffer>(true),
                 hGCCTypeHandle = GetComponentTypeHandle<HexGridChunkComponent>(true),
                 hGCICTypeHandle = GetComponentTypeHandle<HexGridChunkInitialisationComponent>(true),
+                entityTypeHandle = GetEntityTypeHandle(),
                 ecbEnd = ecbEndSystem.CreateCommandBuffer().AsParallelWriter(),
                 ecbBegin = ecbBeginSystem.CreateCommandBuffer().AsParallelWriter()
             };
@@ -450,11 +451,14 @@ namespace DOTSHexagonsV2
             [ReadOnly]
             public ComponentTypeHandle<HexGridChunkComponent> hGCCTypeHandle;
             [ReadOnly]
+            public EntityTypeHandle entityTypeHandle;
+            [ReadOnly]
             public ComponentTypeHandle<HexGridChunkInitialisationComponent> hGCICTypeHandle;
             public EntityCommandBuffer.ParallelWriter ecbEnd;
             public EntityCommandBuffer.ParallelWriter ecbBegin;
             public void Execute(ArchetypeChunk batchInChunk, int batchIndex)
             {
+                NativeArray<Entity> ChunkEntities = batchInChunk.GetNativeArray(entityTypeHandle);
                 NativeArray<HexGridChunkComponent> hexGridCompArray = batchInChunk.GetNativeArray(hGCCTypeHandle);
                 NativeArray<HexGridChunkInitialisationComponent> hexGridInitCompArray = batchInChunk.GetNativeArray(hGCICTypeHandle);
                 BufferAccessor<LinkedEntityGroup> linkedEntityGroupAccessors = batchInChunk.GetBufferAccessor(linkedEntityGroups);
@@ -473,23 +477,23 @@ namespace DOTSHexagonsV2
                     ecbBegin.SetComponent(batchIndex, comp.entityEstuaries, new HexRenderer { ChunkIndex = comp.chunkIndex, rendererID = RendererID.Estuaries });
                     ecbBegin.SetComponent(batchIndex, comp.entityRoads, new HexRenderer { ChunkIndex = comp.chunkIndex, rendererID = RendererID.Roads });
                     ecbBegin.SetComponent(batchIndex, comp.entityWalls, new HexRenderer { ChunkIndex = comp.chunkIndex, rendererID = RendererID.Walls });
-                    ecbBegin.SetComponent(batchIndex, comp.FeatureContainer, new FeatureContainer { GridEntity = comp.gridEntity });
+                    ecbBegin.SetComponent(batchIndex, comp.FeatureContainer, new FeatureContainer { GridEntity = comp.gridEntity, ChunkEntity = ChunkEntities[index] });
 
-                    DynamicBuffer<HexGridCellBuffer> cellBuffer = cellBufferAccessors[index];
-                    NativeArray<CellContainer> cellFeatures = new NativeArray<CellContainer>(cellBuffer.Length, Allocator.Temp);
-                    for (int i = 9, cellBufferIndex = 0; i < linkedEntities.Length; i++, cellBufferIndex++)
-                    {
-                        cellFeatures[cellBufferIndex] = new CellContainer { cellIndex = cellBuffer[cellBufferIndex].cellIndex, container = linkedEntities[i].Value };
-                        FeatureDataContainer featureData = new FeatureDataContainer
-                        {
-                            containerEntity = linkedEntities[1].Value,
-                            cellIndex = cellBuffer[cellBufferIndex].cellIndex,
-                            GridEntity = comp.gridEntity
-                        };
-                        ecbBegin.SetComponent(batchIndex, linkedEntities[i].Value, featureData);
-                    }
-                    ecbEnd.AddBuffer<CellContainer>(batchIndex, comp.FeatureContainer).CopyFrom(cellFeatures);
-                    cellFeatures.Dispose();
+                    //DynamicBuffer<HexGridCellBuffer> cellBuffer = cellBufferAccessors[index];
+                    //NativeArray<CellContainer> cellFeatures = new NativeArray<CellContainer>(cellBuffer.Length, Allocator.Temp);
+                    //for (int i = 9, cellBufferIndex = 0; i < linkedEntities.Length; i++, cellBufferIndex++)
+                    //{
+                    //    cellFeatures[cellBufferIndex] = new CellContainer { cellIndex = cellBuffer[cellBufferIndex].cellIndex, container = linkedEntities[i].Value };
+                    //    FeatureGridEntities featureData = new FeatureGridEntities
+                    //    {
+                    //        containerEntity = linkedEntities[1].Value,
+                    //        cellIndex = cellBuffer[cellBufferIndex].cellIndex,
+                    //        GridEntity = comp.gridEntity
+                    //    };
+                    //    ecbBegin.SetComponent(batchIndex, linkedEntities[i].Value, featureData);
+                    //}
+                    //ecbEnd.AddBuffer<CellContainer>(batchIndex, comp.FeatureContainer).CopyFrom(cellFeatures);
+                    //cellFeatures.Dispose();
                     ecbEnd.RemoveComponent<HexGridDataInitialised>(batchIndex, linkedEntities[0].Value);
                     ecbEnd.RemoveComponent<HexGridChunkInitialisationComponent>(batchIndex, linkedEntities[0].Value);
                     if (!gridMarkForGeneration.HasComponent(comp.gridEntity))
@@ -530,13 +534,13 @@ namespace DOTSHexagonsV2
                 ecbEnd.RemoveComponent<HexGridVisualsInitialised>(grids[i]);
                 ecbBegin.AddComponent<HexGridCreated>(grids[i]);
             }
-            DOTSHexEditorV2.GridEntities.AddRange(grids);
-            if (DOTSHexEditorV2.Instance != null)
+            DOTSHexEditorV3.GridEntities.AddRange(grids);
+            if (DOTSHexEditorV3.Instance != null)
             {
-                DOTSHexEditorV2.Instance.HandleNewGrids();
+                DOTSHexEditorV3.Instance.HandleNewGrids();
             }
             
-            Debug.Log("Currently " + DOTSHexEditorV2.GridEntities.Count + " grids.");
+            Debug.Log("Currently " + DOTSHexEditorV3.GridEntities.Count + " grids.");
             grids.Dispose();
     
             return inputDeps;

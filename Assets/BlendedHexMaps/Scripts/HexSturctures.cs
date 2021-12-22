@@ -12,7 +12,7 @@ using System.Runtime.CompilerServices;
 namespace DOTSHexagonsV2
 {
 	public struct HexGridVertex : IBufferElementData
-    {
+	{
 		public static implicit operator float3(HexGridVertex v) { return v.Value; }
 		public static implicit operator HexGridVertex(float3 v) { return new HexGridVertex { Value = v }; }
 		public static implicit operator Vector3(HexGridVertex v) { return v.Value; }
@@ -33,7 +33,7 @@ namespace DOTSHexagonsV2
 		public static implicit operator Vector3(HexGridIndices v) { return v.Value; }
 		public static implicit operator HexGridIndices(Vector3 v) { return new HexGridIndices { Value = v }; }
 		public float3 Value;
-    }
+	}
 	public struct HexGridWeights : IBufferElementData
 	{
 		public static implicit operator float4(HexGridWeights v) { return v.Value; }
@@ -73,7 +73,7 @@ namespace DOTSHexagonsV2
 	}
 
 	public struct ColumnOffset : IComponentData
-    {
+	{
 		public static implicit operator float3(ColumnOffset v) { return v.Value; }
 		public static implicit operator ColumnOffset(float3 v) { return new ColumnOffset { Value = v }; }
 		public static implicit operator Vector3(ColumnOffset v) { return v.Value; }
@@ -83,22 +83,22 @@ namespace DOTSHexagonsV2
 	}
 
 	public struct HexGridComponent : IComponentData
-    {
-        public int currentCentreColumnIndex;
-        public int cellCountX;
-        public int cellCountZ;
-        public int cellCount;
-        public int chunkCountX;
-        public int chunkCountZ;
-        public int chunkCount;
-        public uint seed;
-        public bool wrapping;
-        public int wrapSize;
-        public Entity gridEntity;
-    }
+	{
+		public int currentCentreColumnIndex;
+		public int cellCountX;
+		public int cellCountZ;
+		public int cellCount;
+		public int chunkCountX;
+		public int chunkCountZ;
+		public int chunkCount;
+		public uint seed;
+		public bool wrapping;
+		public int wrapSize;
+		public Entity gridEntity;
+	}
 
 	public struct HexRenderer : IComponentData
-    {
+	{
 		public int ChunkIndex;
 		public RendererID rendererID;
 		public int MeshArrayIndex;
@@ -109,13 +109,13 @@ namespace DOTSHexagonsV2
 		public static implicit operator int(HexMeshIndex v) { return v.Value; }
 		public static implicit operator HexMeshIndex(int v) { return new HexMeshIndex { Value = v }; }
 		public int Value;
-    }
+	}
 
 	public struct RepaintScheduled : IComponentData { }
 	public struct RepaintNow : IComponentData { }
 
 	public enum RendererID
-    {
+	{
 		Terrian,
 		River,
 		Water,
@@ -127,45 +127,45 @@ namespace DOTSHexagonsV2
 
 	public struct HexGridUnInitialised : IComponentData { }
 
-    public struct HexGridDataInitialised : IComponentData
-    {
-        public int chunkIndex;
-        public Entity gridEntity;
-    }
-    public struct HexGridInvokeEvent : IComponentData { }
-    public struct HexGridCreated : IComponentData { }
-    public struct GridWithColumns : IComponentData { }
-    public struct GridWithChunks : IComponentData { }
+	public struct HexGridDataInitialised : IComponentData
+	{
+		public int chunkIndex;
+		public Entity gridEntity;
+	}
+	public struct HexGridInvokeEvent : IComponentData { }
+	public struct HexGridCreated : IComponentData { }
+	public struct GridWithColumns : IComponentData { }
+	public struct GridWithChunks : IComponentData { }
 
 	public struct HexGridVisualsInitialised : IComponentData { }
 
 	public struct HexGridChunkInitialisationComponent : IComponentData
-    {
-        public int chunkIndex;
-        public Entity gridEntity;
-    }
-    public struct HexGridChunkComponent : IComponentData
-    {
-        public int chunkIndex;
+	{
+		public int chunkIndex;
+		public Entity gridEntity;
+	}
+	public struct HexGridChunkComponent : IComponentData
+	{
+		public int chunkIndex;
 
-        public Entity entityTerrian;
-        public Entity entityRiver;
-        public Entity entityWater;
-        public Entity entityWaterShore;
-        public Entity entityEstuaries;
-        public Entity entityRoads;
-        public Entity entityWalls;
+		public Entity entityTerrian;
+		public Entity entityRiver;
+		public Entity entityWater;
+		public Entity entityWaterShore;
+		public Entity entityEstuaries;
+		public Entity entityRoads;
+		public Entity entityWalls;
 
-        public float3 Position;
-        public Entity gridEntity;
-        public Entity FeatureContainer;
-    }
+		public float3 Position;
+		public Entity gridEntity;
+		public Entity FeatureContainer;
+	}
 
-    public struct HexGridChunkBuffer : IBufferElementData
-    {
-        public Entity ChunkEntity;
+	public struct HexGridChunkBuffer : IBufferElementData
+	{
+		public Entity ChunkEntity;
 		public int ChunkIndex;
-    }
+	}
 
 
 	public struct HexColumn : IComponentData
@@ -345,36 +345,36 @@ namespace DOTSHexagonsV2
 			return !(lhs == rhs);
 		}
 
-        public override bool Equals(object compare)
-        {
+		public override bool Equals(object compare)
+		{
 			return this == (Entity)compare;
 		}
 
-        public override int GetHashCode()
-        {
-            return Value.GetHashCode();
-        }
+		public override int GetHashCode()
+		{
+			return Value.GetHashCode();
+		}
 
-        public override string ToString()
-        {
-            return Value.ToString();
-        }
-    }
+		public override string ToString()
+		{
+			return Value.ToString();
+		}
+	}
 
 
 	public struct HexGridCellBuffer : IBufferElementData
-    {
-        public int cellIndex;
-        public int featureCount;
-        public int towerCount;
-        public bool hasSpecialFeature;
-        public bool HasFeature { get { return featureCount > 0; } }
-        public bool HasAnyFeature { get { return featureCount > 0 || towerCount > 0 || hasSpecialFeature; } }
-        public bool HasSpecialFeature { get { return hasSpecialFeature; } }
-        public bool HasTowers { get { return towerCount > 0; } }
-    }
+	{
+		public int cellIndex;
+		public int featureCount;
+		public int towerCount;
+		public bool hasSpecialFeature;
+		public bool HasFeature { get { return featureCount > 0; } }
+		public bool HasAnyFeature { get { return featureCount > 0 || towerCount > 0 || hasSpecialFeature; } }
+		public bool HasSpecialFeature { get { return hasSpecialFeature; } }
+		public bool HasTowers { get { return towerCount > 0; } }
+	}
 
-    public struct RefreshChunk : IComponentData { }
+	public struct RefreshChunk : IComponentData { }
 
 	public struct HexCell : IBufferElementData, System.IEquatable<HexCell>
 	{
@@ -816,6 +816,27 @@ namespace DOTSHexagonsV2
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static HexCell GetNeighbour(HexCell cell, DynamicBuffer<HexCell> cells, HexDirection direction)
+		{
+			int neighbourIndex = direction switch
+			{
+				HexDirection.NE => cell.NeighbourNE,
+				HexDirection.E => cell.NeighbourE,
+				HexDirection.SE => cell.NeighbourSE,
+				HexDirection.SW => cell.NeighbourSW,
+				HexDirection.W => cell.NeighbourW,
+				HexDirection.NW => cell.NeighbourNW,
+				_ => int.MinValue,
+			};
+
+			if (neighbourIndex == int.MinValue)
+			{
+				return HexCell.Null;
+			}
+			return cells[neighbourIndex];
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static HexCell CreateWithNoNeighbours(int index, int x, int z, int wrapSize = 0)
 		{
 			HexCell cell = new HexCell();
@@ -890,6 +911,45 @@ namespace DOTSHexagonsV2
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static HexCell SetOutgoingRiver(DynamicBuffer<HexCell> cells, HexCell cell, HexDirection direction)
+		{
+			switch (cell.hasOutgoingRiver && cell.OutgoingRiver == direction)
+			{
+				case false:
+					int neighbourIndex = GetNeighbourIndex(cell, direction);
+					switch (neighbourIndex != int.MinValue)
+					{
+						case true:
+							HexCell neighbour = cells[neighbourIndex];
+							switch (IsValidRiverDestination(cell, neighbour))
+							{
+								case true:
+									cell = RemoveOutgoingRiver(cells, cell);
+									switch (cell.hasIncomingRiver && cell.incomingRiver == direction)
+									{
+										case true:
+											cell = RemoveIncomingRiver(cells, cell);
+											break;
+									}
+									cell.hasOutgoingRiver = true;
+									cell.outgoingRiver = direction;
+									cell.SpecialIndex = 0;
+									cells[cell.Index] = cell;
+									neighbour = RemoveIncomingRiver(cells, neighbour);
+									neighbour.hasIncomingRiver = true;
+									neighbour.incomingRiver = direction.Opposite();
+									neighbour.SpecialIndex = 0;
+									cells[neighbourIndex] = neighbour;
+									break;
+							}
+							break;
+					}
+					break;
+			}
+			return cell;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static HexCell RemoveOutgoingRiver(NativeArray<HexCell> cells, HexCell cell)
 		{
 			switch (cell.hasOutgoingRiver)
@@ -906,7 +966,39 @@ namespace DOTSHexagonsV2
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static HexCell RemoveOutgoingRiver(DynamicBuffer<HexCell> cells, HexCell cell)
+		{
+			switch (cell.hasOutgoingRiver)
+			{
+				case true:
+					cell.hasOutgoingRiver = false;
+					HexCell neighbor = cells[GetNeighbourIndex(cell, cell.outgoingRiver)];
+					neighbor.hasIncomingRiver = false;
+					cells[cell.Index] = cell;
+					cells[neighbor.Index] = neighbor;
+					break;
+			}
+			return cell;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static HexCell RemoveIncomingRiver(NativeArray<HexCell> cells, HexCell cell)
+		{
+			switch (cell.hasIncomingRiver)
+			{
+				case true:
+					cell.hasOutgoingRiver = false;
+					HexCell neighbor = cells[GetNeighbourIndex(cell, cell.outgoingRiver)];
+					neighbor.hasOutgoingRiver = false;
+					cells[cell.Index] = cell;
+					cells[neighbor.Index] = neighbor;
+					break;
+			}
+			return cell;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static HexCell RemoveIncomingRiver(DynamicBuffer<HexCell> cells, HexCell cell)
 		{
 			switch (cell.hasIncomingRiver)
 			{
@@ -944,12 +1036,40 @@ namespace DOTSHexagonsV2
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static HexCell ValidateRivers(DynamicBuffer<HexCell> cells, HexCell cell)
+		{
+
+			if (cell.hasOutgoingRiver && !IsValidRiverDestination(cell, cells[GetNeighbourIndex(cell, cell.outgoingRiver)]))
+			{
+				cell = RemoveOutgoingRiver(cells, cell);
+			}
+			if (cell.hasIncomingRiver && !IsValidRiverDestination(cells[GetNeighbourIndex(cell, cell.outgoingRiver)], cell))
+			{
+				cell = RemoveIncomingRiver(cells, cell);
+			}
+			cells[cell.Index] = cell;
+			return cell;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public bool Equals(HexCell other)
 		{
 			return this.Index == other.Index;
 		}
 
 		public static HexCell SetRoad(NativeArray<HexCell> cells, HexCell cell, HexDirection direction, bool state = true)
+		{
+			HexCell neighbour = GetNeighbour(cell, cells, direction);
+			if (!cell.HasRiverThroughEdge(direction) && !cell.IsSpeical && !neighbour.IsSpeical && GetElevationDifference(cell, neighbour) <= 1)
+			{
+				cell.SetRoad(direction, state);
+				neighbour.SetRoad(direction.Opposite(), state);
+			}
+			cells[cell.Index] = cell;
+			cells[neighbour.Index] = neighbour;
+			return cell;
+		}
+		public static HexCell SetRoad(DynamicBuffer<HexCell> cells, HexCell cell, HexDirection direction, bool state = true)
 		{
 			HexCell neighbour = GetNeighbour(cell, cells, direction);
 			if (!cell.HasRiverThroughEdge(direction) && !cell.IsSpeical && !neighbour.IsSpeical && GetElevationDifference(cell, neighbour) <= 1)
@@ -978,21 +1098,22 @@ namespace DOTSHexagonsV2
 	public struct FeatureContainer : IComponentData
 	{
 		public Entity GridEntity;
+		public Entity ChunkEntity;
 	}
 
-	public struct FeatureDataContainer : IComponentData
+	public struct FeatureGridEntities : IComponentData
 	{
-		public int cellIndex;
 		public Entity containerEntity;
 		public Entity GridEntity;
+		public Entity ChunkEntity;
 	}
-
-	public struct CellFeature : IBufferElementData
+	[System.Serializable]
+	public struct CellFeature : IBufferElementData, System.IEquatable<CellFeature>, System.IComparable<CellFeature>
 	{
 		public int cellIndex;
 		public int featureLevelIndex;
 		public int featureSubIndex;
-		public FeatureCollection featureType;
+		public FeatureType featureType;
 		public float3 position;
 		public float3 direction;
 		public Entity feature;
@@ -1009,6 +1130,46 @@ namespace DOTSHexagonsV2
 				return (cellIndex ^ featureSubIndex ^ (int)featureType) ^ feature.Index;
 			}
 		}
+
+        public int CompareTo(CellFeature other)
+        {
+            return cellIndex.CompareTo(other.cellIndex);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return base.Equals(obj);
+        }
+
+        public bool Equals(CellFeature other)
+        {
+            return other == this;
+        }
+
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
+
+        public bool IsSameFeatureInSameCell(CellFeature other)
+        {
+			return cellIndex == other.cellIndex && featureType == other.featureType
+				&& featureLevelIndex == other.featureLevelIndex && featureSubIndex == other.featureSubIndex;
+		}
+
+
+		public static bool operator ==(CellFeature lhs, CellFeature rhs)
+		{
+			return lhs.cellIndex == rhs.cellIndex && lhs.featureType == rhs.featureType
+				&& lhs.featureLevelIndex == rhs.featureLevelIndex && lhs.featureSubIndex == rhs.featureSubIndex 
+				&& lhs.position.Equals(rhs.position) && lhs.direction.Equals(rhs.direction);
+		}
+
+		public static bool operator !=(CellFeature lhs, CellFeature rhs)
+		{
+			return !(lhs == rhs);
+		}
+
 	}
 
 	public struct Feature : IBufferElementData
@@ -1016,7 +1177,7 @@ namespace DOTSHexagonsV2
 		public int cellIndex;
 		public int featureLevelIndex;
 		public int featureSubIndex;
-		public FeatureCollection featureType;
+		public FeatureType featureType;
 		public float3 position;
 		public float3 direction;
 		public Entity feature;
@@ -1037,12 +1198,14 @@ namespace DOTSHexagonsV2
 		public int cellIndex;
 		public float3 position;
 		public float3 direction;
-		public FeatureCollection ReservedFor;
+		public FeatureType ReservedFor;
 	}
 
 	public struct RefreshCellFeatures : IComponentData { }
 
-	public enum FeatureCollection
+	public struct ProcessFeatures : IComponentData { }
+
+	public enum FeatureType
 	{
 		None,
 		WallTower,

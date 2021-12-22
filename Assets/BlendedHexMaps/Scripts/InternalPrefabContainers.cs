@@ -9,25 +9,84 @@ using Unity.Transforms;
 
 namespace DOTSHexagonsV2
 {
+    [System.Serializable]
+    public struct FeatureCollection
+    {
+        public Transform[] prefabs;
+    }
+
     public class InternalPrefabContainers : MonoBehaviour
     {
         [SerializeField] private HexGridColumn gridColumnPrefab;
         [SerializeField] private HexGridChunk gridChunkPrefab;
 
+
+        [SerializeField] private Transform wallTower;
+        [SerializeField] private Transform bridge;
+        [SerializeField] private Transform[] specialFeatures;
+        [SerializeField] private FeatureCollection[] urbanCollections;
+        [SerializeField] private FeatureCollection[] farmCollections;
+        [SerializeField] private FeatureCollection[] plantCollections;
+
+
         [SerializeField] private Texture2D noiseSource;
+
         public HexGridChunk GridChunkPrefab { get { return gridChunkPrefab; } }
-        public HexGridColumn GridColumnPrefab { get { return gridColumnPrefab;} }
+        public HexGridColumn GridColumnPrefab { get { return gridColumnPrefab; } }
+
+        public Transform WallTower { get { return wallTower; } }
+        public Transform Bridge { get { return bridge; } }
+        public Transform[] SpecialFeatures { get { return specialFeatures; } }
+        public FeatureCollection[] UrbanCollections { get { return urbanCollections; } }
+        public FeatureCollection[] FarmCollections { get { return farmCollections; } }
+        public FeatureCollection[] PlantCollections { get { return plantCollections; } }
+
+        private FeatureDecisionSystem FDS;
 
         private void Awake()
         {
             HexFunctions.noiseSource = noiseSource;
             HexFunctions.SetNoiseColours();
+            FDS = World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<FeatureDecisionSystem>();
+            FDS.internalPrefabs = this;
+            FDS.CreateEntityWorldInfo();
         }
 
         private void OnDestroy()
         {
             HexFunctions.CleanUpNoiseColours();
         }
+
+        public HexGridFeatureInfo InstinateFeature(CellFeature feature)
+        {
+            return feature.featureType switch
+            {
+                FeatureType.WallTower => Instantiate(WallTower).GetComponent<HexGridFeatureInfo>(),
+                FeatureType.Bridge => Instantiate(Bridge).GetComponent<HexGridFeatureInfo>(),
+                FeatureType.Special => Instantiate(GetSpecialFeature(feature.featureLevelIndex)).GetComponent<HexGridFeatureInfo>(),
+                FeatureType.Urban => Instantiate(GetUrbanFeature(feature.featureLevelIndex, feature.featureSubIndex)).GetComponent<HexGridFeatureInfo>(),
+                FeatureType.Farm => Instantiate(GetFarmFeature(feature.featureLevelIndex, feature.featureSubIndex)).GetComponent<HexGridFeatureInfo>(),
+                FeatureType.Plant => Instantiate(GetPlantFeature(feature.featureLevelIndex, feature.featureSubIndex)).GetComponent<HexGridFeatureInfo>(),
+                _ => null,
+            };
+        }
+
+        public void DestroyFeature(HexGridFeatureInfo feature)
+        {
+            if (feature != null)
+            {
+                Destroy(feature.gameObject);
+            }
+        }
+
+        public Transform GetSpecialFeature(int index) { return SpecialFeatures[index]; }
+        public FeatureCollection GetUrbanCollection(int index) { return UrbanCollections[index]; }
+        public FeatureCollection GetFarmCollection(int index) { return FarmCollections[index]; }
+        public FeatureCollection GetPlantCollection(int index) { return PlantCollections[index]; }
+
+        public Transform GetUrbanFeature(int collectionIndex,int index) { return GetUrbanCollection(collectionIndex).prefabs[index]; }
+        public Transform GetFarmFeature(int collectionIndex, int index) { return GetFarmCollection(collectionIndex).prefabs[index]; }
+        public Transform GetPlantFeature(int collectionIndex, int index) { return GetPlantCollection(collectionIndex).prefabs[index]; }
     }
 
     public class HexGridChunkSystem : JobComponentSystem
@@ -42,9 +101,8 @@ namespace DOTSHexagonsV2
             EntityManager.GetBuffer<LinkedEntityGroup>(HexGridChunkPrefab).Add(HexGridChunkPrefab);
 
             EntityArchetype chunkRendererArch = EntityManager.CreateArchetype(typeof(HexRenderer),typeof(HexGridParent), typeof(Prefab), typeof(HexGridVertex), typeof(HexGridTriangles));
-            EntityArchetype containerBufferArch = EntityManager.CreateArchetype(typeof(Feature), typeof(FeatureDataContainer), typeof(PossibleFeaturePosition), typeof(HexGridChild), typeof(HexGridParent), typeof(Prefab));
 
-            Entity chunkFeatureContainer = EntityManager.CreateEntity(typeof(CellFeature), typeof(CellContainer), typeof(HexGridChild), typeof(HexGridParent), typeof(FeatureContainer), typeof(Prefab));
+            Entity chunkFeatureContainer = EntityManager.CreateEntity(typeof(CellFeature), typeof(PossibleFeaturePosition), typeof(HexGridParent), typeof(FeatureContainer), typeof(Prefab));
             //EntityManager.SetName(chunkFeatureContainer, "chunkFeatureContainer");
             EntityManager.SetComponentData(chunkFeatureContainer, new HexGridParent { Value = HexGridChunkPrefab });
             HexGridChunkComponent data = EntityManager.GetComponentData<HexGridChunkComponent>(HexGridChunkPrefab);
@@ -118,21 +176,10 @@ namespace DOTSHexagonsV2
             EntityManager.GetBuffer<LinkedEntityGroup>(HexGridChunkPrefab).Add(mesh);
 
             EntityManager.SetComponentData(HexGridChunkPrefab, data);
-
-            int cellsPerChunk = HexFunctions.chunkSizeX * HexFunctions.chunkSizeZ;
-            for (int cPCi = 0; cPCi < cellsPerChunk; cPCi++)
-            {
-                Entity feautreBuffer = EntityManager.CreateEntity(containerBufferArch);
-                //EntityManager.SetName(feautreBuffer, "containerBuffer" + cPCi );
-                EntityManager.SetComponentData(feautreBuffer, new HexGridParent { Value = data.FeatureContainer });
-                EntityManager.SetComponentData(feautreBuffer, new FeatureDataContainer { containerEntity = data.FeatureContainer });
-                EntityManager.GetBuffer<LinkedEntityGroup>(HexGridChunkPrefab).Add(feautreBuffer);
-            }
         }
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            //EntityManager.Instantiate(HexGridChunkPrefab);
             this.Enabled = false;
             return inputDeps;
         }

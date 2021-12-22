@@ -484,9 +484,9 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1333539451}
-        m_TargetAssemblyTypeName: DOTSHexagonsV2.DOTSHexEditorV2, Assembly-CSharp
+        m_TargetAssemblyTypeName: DOTSHexagonsV2.DOTSHexEditorV3, Assembly-CSharp
         m_MethodName: SetApplySpecialIndex
-        m_Mode: 6
+        m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
@@ -4580,9 +4580,9 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1333539451}
-        m_TargetAssemblyTypeName: DOTSHexagonsV2.DOTSHexEditorV2, Assembly-CSharp
+        m_TargetAssemblyTypeName: DOTSHexagonsV2.DOTSHexEditorV3, Assembly-CSharp
         m_MethodName: SetApplyUrbanLevel
-        m_Mode: 6
+        m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
@@ -9900,9 +9900,9 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1333539451}
-        m_TargetAssemblyTypeName: DOTSHexagonsV2.DOTSHexEditorV2, Assembly-CSharp
+        m_TargetAssemblyTypeName: DOTSHexagonsV2.DOTSHexEditorV3, Assembly-CSharp
         m_MethodName: SetApplyFarmLevel
-        m_Mode: 6
+        m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
@@ -11312,7 +11312,6 @@ MonoBehaviour:
   cellCountX: 20
   cellCountZ: 15
   wrapping: 0
-  startTime: 0
 --- !u!4 &1771999946
 Transform:
   m_ObjectHideFlags: 0
@@ -11341,6 +11340,42 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gridColumnPrefab: {fileID: 6351141363131410625, guid: 4c1b464e00e681a49a5bdf2eac185b57, type: 3}
   gridChunkPrefab: {fileID: 7874830607128136338, guid: 95b39df40e3f2f54486bf7aac8521a93, type: 3}
+  wallTower: {fileID: 5151144053563276192, guid: 11a6e72f4c4abd841a69304633928698, type: 3}
+  bridge: {fileID: 2400413479323601189, guid: 807091713a8abde40a2c1422abcdb357, type: 3}
+  specialFeatures:
+  - {fileID: 2733753161609903617, guid: 586cbf0e1d60137448a714f5bde5354a, type: 3}
+  - {fileID: 2477455674983400480, guid: a920d55ceef32f144a7b34021ae20189, type: 3}
+  - {fileID: 5628245051839399073, guid: f2e0a1cedae842e4db8c379e4e265246, type: 3}
+  urbanCollections:
+  - prefabs:
+    - {fileID: 5451406027896733150, guid: 9fccef598d3a2bb438119297563bdbb9, type: 3}
+    - {fileID: 1776953796812611997, guid: c0f9a6612551d5d439fa68e20888c1ae, type: 3}
+  - prefabs:
+    - {fileID: 8262613575279505644, guid: 9d407db28513d5d4ead99d083fb74a9d, type: 3}
+    - {fileID: 1703087967584049560, guid: 634b58a4cdea52c4f90235f6ee28d2bd, type: 3}
+  - prefabs:
+    - {fileID: 8408573623391082315, guid: 17745da3995a77146976aeabe715614a, type: 3}
+    - {fileID: 4607383156218104076, guid: ddc9a054d2f72bc429e2134a57d1ee90, type: 3}
+  farmCollections:
+  - prefabs:
+    - {fileID: 7017956522380879610, guid: ec4d018922848c24593232459a6a0e8f, type: 3}
+    - {fileID: 8478897462816809950, guid: f42ec7c706914db4db57d55fc3986409, type: 3}
+  - prefabs:
+    - {fileID: 6487497534529936217, guid: c1a4e3d0f1ae16a49aca68e19ec0a036, type: 3}
+    - {fileID: 6090573004152353929, guid: f7013dc3118a1db4b84b6578fdcb55e8, type: 3}
+  - prefabs:
+    - {fileID: 5870566673594794247, guid: f012ab9c91d9ac04b9983692d579080f, type: 3}
+    - {fileID: 2598230000385766968, guid: 6f8322562158b944684270e18e1717c9, type: 3}
+  plantCollections:
+  - prefabs:
+    - {fileID: 1017939256469492054, guid: 176d238f05aeb0f4e845571ce2e88045, type: 3}
+    - {fileID: 2066025090092034571, guid: b85535544c21a6a42a45d7eb0bc443d1, type: 3}
+  - prefabs:
+    - {fileID: 1062242930088278347, guid: c95506f588b6e294fbf15da00782da47, type: 3}
+    - {fileID: 5396933670489684186, guid: 64e0a3a886c41f346b0862a089bd6201, type: 3}
+  - prefabs:
+    - {fileID: 90487333685931227, guid: 8cd91ba6050ac924e849486413aa4926, type: 3}
+    - {fileID: 5054112726769783609, guid: 6723984a49389f74ca7f4a1a0d469efc, type: 3}
   noiseSource: {fileID: 2800000, guid: b9e37f518e7a650448a6a59ee52a6405, type: 3}
 --- !u!114 &1771999948
 MonoBehaviour:
@@ -12439,9 +12474,9 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1333539451}
-        m_TargetAssemblyTypeName: DOTSHexagonsV2.DOTSHexEditorV2, Assembly-CSharp
+        m_TargetAssemblyTypeName: DOTSHexagonsV2.DOTSHexEditorV3, Assembly-CSharp
         m_MethodName: SetApplyPlantLevel
-        m_Mode: 6
+        m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine

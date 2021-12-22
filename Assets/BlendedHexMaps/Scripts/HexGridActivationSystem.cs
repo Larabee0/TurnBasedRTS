@@ -7,6 +7,7 @@ using Unity.Physics;
 
 namespace DOTSHexagonsV2
 {
+    [UpdateInGroup(typeof(HexGridV2SystemGroup))]
     public class HexGridActivationSystem : JobComponentSystem
     {
         private EndSimulationEntityCommandBufferSystem ecbEndSystem;
@@ -14,6 +15,7 @@ namespace DOTSHexagonsV2
 
         private EntityQuery MakeActiveQuery;
         private EntityQuery AllCreatedGridsQuery;
+        private EntityQuery RepaintChunks;
 
         protected override void OnCreate()
         {
@@ -22,6 +24,7 @@ namespace DOTSHexagonsV2
 
             MakeActiveQuery = GetEntityQuery(new EntityQueryDesc { All = new ComponentType[] { typeof(HexGridComponent), typeof(HexGridCreated), typeof(MakeActiveGridEntity) } });
             AllCreatedGridsQuery = GetEntityQuery(new EntityQueryDesc { All = new ComponentType[] { typeof(HexGridComponent), typeof(HexGridCreated) } });
+            RepaintChunks = GetEntityQuery(new EntityQueryDesc { All = new ComponentType[] { typeof(RepaintScheduled), typeof(HexGridChunkComponent) } });
         }
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
@@ -45,7 +48,16 @@ namespace DOTSHexagonsV2
             }
             else
             {
-                outputDeps = inputDeps;
+                RepaintChunkRenderers repaintChunksJob = new RepaintChunkRenderers
+                {
+                    entityTypeHandle = GetEntityTypeHandle(),
+                    hGCCTypeHandle = GetComponentTypeHandle<HexGridChunkComponent>(true),
+                    ecbBegin = ecbBeginSystem.CreateCommandBuffer().AsParallelWriter(),
+                    ecbEnd = ecbEndSystem.CreateCommandBuffer().AsParallelWriter()
+                };
+                outputDeps = repaintChunksJob.ScheduleParallel(RepaintChunks, 64, inputDeps);
+                ecbBeginSystem.AddJobHandleForProducer(outputDeps);
+                ecbEndSystem.AddJobHandleForProducer(outputDeps);
             }
 
             return outputDeps;
@@ -62,6 +74,7 @@ namespace DOTSHexagonsV2
             public ComponentDataFromEntity<ActiveGridEntity> currentActive;
             [ReadOnly]
             public ComponentTypeHandle<HexGridComponent> gridCompTypes;
+
 
             public EntityCommandBuffer ecbEnd;
             public EntityCommandBuffer ecbBegin;
@@ -87,5 +100,35 @@ namespace DOTSHexagonsV2
             }
         }
 
+        [BurstCompile]
+        private struct RepaintChunkRenderers : IJobEntityBatch
+        {
+            [ReadOnly]
+            public EntityTypeHandle entityTypeHandle;
+            [ReadOnly]
+            public ComponentTypeHandle<HexGridChunkComponent> hGCCTypeHandle;
+
+
+            public EntityCommandBuffer.ParallelWriter ecbEnd;
+            public EntityCommandBuffer.ParallelWriter ecbBegin;
+            public void Execute(ArchetypeChunk batchInChunk, int batchIndex)
+            {
+                NativeArray<Entity> chunks = batchInChunk.GetNativeArray(entityTypeHandle);
+                NativeArray<HexGridChunkComponent> chunkComps = batchInChunk.GetNativeArray(hGCCTypeHandle);
+                for (int i = 0; i < chunkComps.Length; i++)
+                {
+                    HexGridChunkComponent comp = chunkComps[i];
+                    ecbEnd.RemoveComponent<RepaintScheduled>(batchIndex, chunks[i]);
+                    ecbBegin.AddComponent<RepaintScheduled>(batchIndex, comp.entityTerrian);
+                    ecbBegin.AddComponent<RepaintScheduled>(batchIndex, comp.entityRiver);
+                    ecbBegin.AddComponent<RepaintScheduled>(batchIndex, comp.entityWater);
+                    ecbBegin.AddComponent<RepaintScheduled>(batchIndex, comp.entityWaterShore);
+                    ecbBegin.AddComponent<RepaintScheduled>(batchIndex, comp.entityEstuaries);
+                    ecbBegin.AddComponent<RepaintScheduled>(batchIndex, comp.entityRoads);
+                    ecbBegin.AddComponent<RepaintScheduled>(batchIndex, comp.entityWalls);
+                    ecbBegin.AddComponent<ProcessFeatures>(batchIndex, comp.FeatureContainer);
+                }
+            }
+        }
     }
 }
