@@ -441,6 +441,20 @@ namespace DOTSHexagonsV2
 		}
 	}
 
+	public static class Bezier
+	{
+		public static Vector3 GetPoint(float3 a, float3 b, float3 c, float t)
+		{
+			float r = 1f - t;
+			return r * r * a + 2f * r * t * b + t * t * c;
+		}
+
+		public static Vector3 GetDerivative(float3 a, float3 b, float3 c, float t)
+		{
+			return 2f * ((1f - t) * (b - a) + t * (c - b));
+		}
+	}
+
 	public struct HexHash : IBufferElementData
 	{
 		public float a;
@@ -623,14 +637,41 @@ namespace DOTSHexagonsV2
 
 	public struct HexCellQueueElement
 	{
-		public static HexCellQueueElement Null = new HexCellQueueElement { cellIndex = int.MinValue, NextWithSamePriority = int.MinValue, SearchPhase = int.MinValue };
+		public static HexCellQueueElement Null = new HexCellQueueElement { cellIndex = int.MinValue, NextWithSamePriority = int.MinValue, SearchPhase = int.MinValue, PathFrom = int.MinValue };
 		public int cellIndex;
 		public int SearchPriority { get { return Distance + SearchHeuristic; } }
 		public int NextWithSamePriority;
 		public int SearchPhase;
 		public int Distance;
 		public int SearchHeuristic;
-	}
+		public int PathFrom;
+
+		public static bool operator ==(HexCellQueueElement lhs, HexCellQueueElement rhs)
+        {
+			return lhs.cellIndex == rhs.cellIndex;
+        }
+
+		public static bool operator !=(HexCellQueueElement lhs, HexCellQueueElement rhs)
+		{
+			return !(lhs == rhs);
+		}
+
+
+		public bool Equals(HexCellQueueElement other)
+		{
+			return other == this;
+		}
+
+		public override bool Equals(object obj)
+		{
+			return base.Equals(obj);
+		}
+
+        public override int GetHashCode()
+        {
+			return cellIndex.GetHashCode();
+        }
+    }
 
 	public struct HexCoordinates
 	{

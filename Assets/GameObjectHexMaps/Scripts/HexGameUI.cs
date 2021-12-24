@@ -68,7 +68,7 @@ namespace GameObjectHexagons {
         {
             if (UpdateCurrentCell())
             {
-                if (currentCell&&selectedUnit.IsValidDestination(currentCell))
+                if (currentCell && selectedUnit.IsValidDestination(currentCell))
                 {
                     grid.FindPath(selectedUnit.Location, currentCell, selectedUnit);
                 }

@@ -205,22 +205,21 @@ namespace DOTSHexagonsV2
 		private void TriangulateWater(DynamicBuffer<HexCell> cells, MeshData waterMesh, MeshUV waterShoreMesh, Mesh2UV estuariesMesh, HexDirection direction, HexCell cell, float3 centre)
 		{
 			centre.y = cell.WaterSurfaceY;
-			int neighbourIndex = HexCell.GetNeighbourIndex(cell, direction);
-			if (neighbourIndex != int.MinValue)
+			HexCell neighbour = HexCell.GetNeighbour(cell,cells, direction);
+			if (neighbour)
 			{
-				HexCell neighbour = cells[neighbourIndex];
 				if (!neighbour.IsUnderwater)
 				{
 					TriangulateWaterShore(cells, waterMesh, waterShoreMesh, estuariesMesh, direction, cell, neighbour, centre);
 				}
 				else
 				{
-					TriangulateOpenWater(cells, waterMesh, direction, cell, neighbourIndex, centre);
+					TriangulateOpenWater(cells, waterMesh, direction, cell, neighbour.Index, centre);
 				}
 			}
 			else
 			{
-				TriangulateOpenWater(cells, waterMesh, direction, cell, neighbourIndex, centre);
+				TriangulateOpenWater(cells, waterMesh, direction, cell, neighbour.Index, centre);
 			}
 		}
 
@@ -246,15 +245,14 @@ namespace DOTSHexagonsV2
 					switch (direction <= HexDirection.E)
 					{
 						case true:
-							int nextNeighbourIndex = HexCell.GetNeighbourIndex(cell, direction.Next());
-							switch (nextNeighbourIndex != int.MinValue)
+							HexCell nextNeighbour = HexCell.GetNeighbour(cell,cells, direction.Next());
+							switch ((bool)nextNeighbour)
 							{
 								case true:
-									HexCell nextNeighbor = cells[nextNeighbourIndex];
-									switch (nextNeighbor.IsUnderwater)
+									switch (nextNeighbour.IsUnderwater)
 									{
 										case true:
-											indices.z = nextNeighbourIndex;
+											indices.z = nextNeighbour.Index;
 											AddTriangleInfo(wrapSize, waterMesh, c2, e2, c2 + HexFunctions.GetWaterBridge(direction.Next()), indices, weights1, weights2, weights3);
 											break;
 									}
@@ -318,11 +316,10 @@ namespace DOTSHexagonsV2
 					break;
 			}
 
-			int nextNeighborIndex = HexCell.GetNeighbourIndex(cell, direction.Next());
-			switch (nextNeighborIndex != int.MinValue)
+			HexCell nextNeighbor = HexCell.GetNeighbour(cell,cells, direction.Next());
+			switch ((bool)nextNeighbor)
 			{
 				case true:
-					HexCell nextNeighbor = cells[nextNeighborIndex];
 					float3 centre3 = nextNeighbor.Position;
 					switch (nextNeighbor.ColumnIndex < cell.ColumnIndex - 1)
 					{
@@ -415,14 +412,13 @@ namespace DOTSHexagonsV2
 
 		private void TriangulateConnection(DynamicBuffer<HexCell> cells, MeshData terrianMesh, MeshUV riverMesh, MeshUV roadMesh, MeshBasic wallMesh, NativeList<PossibleFeaturePosition> features, HexDirection direction, HexCell cell, EdgeVertices e1)
 		{
-			int neighbourIndex = HexCell.GetNeighbourIndex(cell, direction);
+			HexCell neighbour = HexCell.GetNeighbour(cell, cells, direction);
 			int wrapSize = cell.wrapSize;
-			switch (neighbourIndex == int.MinValue)
+			switch ((bool)neighbour)
 			{
-				case true:
+				case false:
 					return;
 			}
-			HexCell neighbour = cells[neighbourIndex];
 
 			float3 bridge = HexFunctions.GetBridge(direction);
 
@@ -437,7 +433,7 @@ namespace DOTSHexagonsV2
 				case true:
 					e2.v3.y = neighbour.StreamBedY;
 					float3 indices = cell.Index;
-					indices.y = neighbourIndex;
+					indices.y = neighbour.Index;
 					switch (cell.IsUnderwater)
 					{
 						case false:
@@ -474,18 +470,17 @@ namespace DOTSHexagonsV2
 					TriangulateEdgeTerraces(terrianMesh, roadMesh, e1, cell, e2, neighbour, hasRoad);
 					break;
 				case false:
-					TriangulateEdgeStrip(wrapSize, terrianMesh, roadMesh, e1, weights1, cell.Index, e2, weights2, neighbourIndex, hasRoad);
+					TriangulateEdgeStrip(wrapSize, terrianMesh, roadMesh, e1, weights1, cell.Index, e2, weights2, neighbour.Index, hasRoad);
 					break;
 			}
 			AddWall(wallMesh, features, cell.Index, e1, cell, e2, neighbour, hasRiver, hasRoad);
 
-			int nextNeighbourIndex = HexCell.GetNeighbourIndex(cell, direction.Next());
-			switch (nextNeighbourIndex == int.MinValue)
+			HexCell nextNeighbour = HexCell.GetNeighbour(cell, cells, direction.Next());
+			switch ((bool)nextNeighbour)
 			{
-				case true:
+				case false:
 					return;
 			}
-			HexCell nextNeighbour = cells[nextNeighbourIndex];
 			switch (direction <= HexDirection.E)
 			{
 				case true:

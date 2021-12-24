@@ -195,7 +195,7 @@ namespace DOTSHexagonsV2
 		private void HandleInput()
 		{
 			HexCell currentCell = GetCellUnderCursor();
-			if (!previousCell.Equals(HexCell.Null) && !previousCell.Equals(currentCell))
+			if (previousCell && previousCell!=currentCell)
 			{
 				ValidateDrag(currentCell);
 			}
@@ -244,12 +244,9 @@ namespace DOTSHexagonsV2
 			for (dragDirection = HexDirection.NE; dragDirection <= HexDirection.NW; dragDirection++)
 			{
 				HexCell neighbour = HexCell.GetNeighbour(cell, cells, dragDirection);
-				if (!neighbour.Equals(HexCell.Null))
+				if (neighbour && neighbour.ChunkIndex != cell.ChunkIndex)
 				{
-					if (neighbour.ChunkIndex != cell.ChunkIndex)
-					{
-						chunksToUpdate.Add(chunks[neighbour.ChunkIndex].ChunkEntity);
-					}
+					chunksToUpdate.Add(chunks[neighbour.ChunkIndex].ChunkEntity);
 				}
 			}
 		}
@@ -306,7 +303,7 @@ namespace DOTSHexagonsV2
 
 		public void EditCell(HexCell cell)
 		{
-			if (!cell.Equals(HexCell.Null))
+			if (cell)
 			{
 				if (activeTerrianTypeIndex >= 0)
 				{
@@ -332,7 +329,7 @@ namespace DOTSHexagonsV2
 						for (HexDirection direction = HexDirection.NE; direction <= HexDirection.NW; direction++)
 						{
 							HexCell neighbourCell = HexCell.GetNeighbour(cell, cells, direction);
-							if (!neighbourCell.Equals(HexCell.Null))
+							if (neighbourCell)
 							{
 								if (cell.GetRoad(direction) && HexCell.GetElevationDifference(cell, neighbourCell) > 1)
 								{
@@ -409,7 +406,7 @@ namespace DOTSHexagonsV2
 				if (isDrag)
 				{
 					HexCell otherCell = HexCell.GetNeighbour(cell, cells, dragDirection.Opposite());
-					if (!otherCell.Equals(HexCell.Null))
+					if (otherCell)
 					{
 						if (riverMode == OptionalToggle.Yes)
 						{

@@ -548,10 +548,9 @@ namespace DOTSHexagonsV2
                 int erodibleElevation = cell.Elevation - 2;
                 for (HexDirection d = HexDirection.NE; d <= HexDirection.NW; d++)
                 {
-                    int neighbourIndex = HexCell.GetNeighbourIndex(cell, d);
-                    if (neighbourIndex != int.MinValue)
+                    HexCell neighbour = HexCell.GetNeighbour(cell,cells, d);
+                    if (neighbour)
                     {
-                        HexCell neighbour = cells[neighbourIndex];
                         if (neighbour.Elevation <= erodibleElevation)
                         {
                             return true;
@@ -598,13 +597,12 @@ namespace DOTSHexagonsV2
 
                     for (HexDirection d = HexDirection.NE; d <= HexDirection.NW; d++)
                     {
-                        int neighbourIndex = HexCell.GetNeighbourIndex(cell, d);
-                        if (neighbourIndex != int.MinValue)
+                        HexCell neighbour = HexCell.GetNeighbour(cell,cells, d);
+                        if (neighbour)
                         {
-                            HexCell neighbour = cells[neighbourIndex];
-                            if (neighbour.Elevation == cell.Elevation + 2 && !erodibleCells.Contains(neighbourIndex))
+                            if (neighbour.Elevation == cell.Elevation + 2 && !erodibleCells.Contains(neighbour.Index))
                             {
-                                erodibleCells.Add(neighbourIndex);
+                                erodibleCells.Add(neighbour.Index);
                             }
                         }
                     }
@@ -616,19 +614,15 @@ namespace DOTSHexagonsV2
 
                     for (HexDirection d = HexDirection.NE; d <= HexDirection.NW; d++)
                     {
-                        int neighbourIndex = HexCell.GetNeighbourIndex(targetCell, d);
-                        if (neighbourIndex != int.MinValue)
+                        HexCell neighbour = HexCell.GetNeighbour(cell, cells, d);
+                        if (neighbour && neighbour != cell && neighbour.Elevation == targetCell.Elevation + 1 && !IsErodible(cells, neighbour))
                         {
-                            HexCell neighbour = cells[neighbourIndex];
-                            if (!neighbour.Equals(cell) && neighbour.Elevation == targetCell.Elevation + 1 && !IsErodible(cells, neighbour))
+                            for (int i = 0; i < erodibleCells.Length; i++)
                             {
-                                for (int i = 0; i < erodibleCells.Length; i++)
+                                if (erodibleCells[i] == neighbour.Index)
                                 {
-                                    if (erodibleCells[i] == neighbourIndex)
-                                    {
-                                        erodibleCells.RemoveAt(i);
-                                        break;
-                                    }
+                                    erodibleCells.RemoveAt(i);
+                                    break;
                                 }
                             }
                         }
@@ -644,10 +638,9 @@ namespace DOTSHexagonsV2
                 int erodibleElevation = cell.Elevation - 2;
                 for (HexDirection d = HexDirection.NE; d <= HexDirection.NW; d++)
                 {
-                    int neighbourIndex = HexCell.GetNeighbourIndex(cell, d);
-                    if (neighbourIndex != int.MinValue)
+                    HexCell neighbour = HexCell.GetNeighbour(cell, cells, d);
+                    if (neighbour)
                     {
-                        HexCell neighbour = cells[neighbourIndex];
                         if (neighbour.Elevation <= erodibleElevation)
                         {
                             candidates.Add(neighbour.Index);
@@ -708,11 +701,10 @@ namespace DOTSHexagonsV2
                         float seepage = cellClimate.moisture * settings.seepageFactor * (1f / 6f);
                         for (HexDirection d = HexDirection.NE; d <= HexDirection.NW; d++)
                         {
-                            int neighbourIndex = HexCell.GetNeighbourIndex(cell, d);
-                            switch (neighbourIndex != int.MinValue)
+                            HexCell neighbour = HexCell.GetNeighbour(cell, cells, d);
+                            switch ((bool)neighbour)
                             {
                                 case true:
-                                    HexCell neighbour = cells[neighbourIndex];
 
                                     ClimateData neighbourClimate = nextClimate[neighbour.Index];
                                     if (d == mainDispersalDirection)
@@ -828,11 +820,10 @@ namespace DOTSHexagonsV2
                         bool isValidOrigin = true;
                         for (HexDirection d = HexDirection.NE; d <= HexDirection.NW; d++)
                         {
-                            int neighbourIndex = HexCell.GetNeighbourIndex(origin, d);
-                            switch (neighbourIndex != int.MinValue)
+                            HexCell neighbour = HexCell.GetNeighbour(origin, cells, d);
+                            switch ((bool)neighbour)
                             {
                                 case true:
-                                    HexCell neighbour = cells[neighbourIndex];
                                     switch (neighbour.HasRiver || neighbour.IsUnderwater)
                                     {
                                         case true:
@@ -867,18 +858,17 @@ namespace DOTSHexagonsV2
                     flowDirections.Clear();
                     for (HexDirection d = HexDirection.NE; d <= HexDirection.NW; d++)
                     {
-                        int neighbourIndex = HexCell.GetNeighbourIndex(cell, d);
-                        switch (neighbourIndex != int.MinValue)
+                        HexCell neighbour = HexCell.GetNeighbour(cell, cells, d);
+                        switch ((bool)neighbour)
                         {
                             case true:
-                                HexCell neighbour = cells[neighbourIndex];
                                 switch (neighbour.Elevation < minNeighbourElevation)
                                 {
                                     case true:
                                         minNeighbourElevation = neighbour.Elevation;
                                         break;
                                 }
-                                switch (neighbour.Equals(origin) || neighbour.HasIncomingRiver)
+                                switch (neighbour==origin || neighbour.HasIncomingRiver)
                                 {
                                     case false:
                                         int delta = neighbour.Elevation - cell.Elevation;
@@ -954,7 +944,7 @@ namespace DOTSHexagonsV2
                     }
                     cells[cell.Index] = cell;
                     origin = cells[originIndex];
-                    cell = cells[HexCell.GetNeighbourIndex(cell, direction)];
+                    cell = HexCell.GetNeighbour(cell, cells, direction);
 
                 }
                 return (length, randomNumber);
@@ -1023,11 +1013,10 @@ namespace DOTSHexagonsV2
                             int cliffs = 0, slopes = 0;
                             for (HexDirection d = HexDirection.NE; d <= HexDirection.NW; d++)
                             {
-                                int neighbourIndex = HexCell.GetNeighbourIndex(cell, d);
-                                switch (neighbourIndex != int.MinValue)
+                                HexCell neighbour = HexCell.GetNeighbour(cell,cells, d);
+                                switch ((bool)neighbour)
                                 {
                                     case true:
-                                        HexCell neighbour = cells[neighbourIndex];
                                         int delta = neighbour.Elevation - cell.WaterLevel;
                                         if (delta == 0)
                                         {

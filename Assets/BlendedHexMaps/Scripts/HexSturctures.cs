@@ -377,7 +377,7 @@ namespace DOTSHexagonsV2
 	public struct RefreshChunk : IComponentData { }
 
 	public struct HexCell : IBufferElementData, System.IEquatable<HexCell>
-	{
+    {
 		public static readonly HexCell Null = CreateEmpty(int.MinValue, int.MinValue, int.MinValue);
 
 		public HexCoordinates coordinates;
@@ -443,7 +443,7 @@ namespace DOTSHexagonsV2
 
 		private void RefreshPosition()
 		{
-			Vector3 position = Position;
+			float3 position = Position;
 			position.y = elevation * HexFunctions.elevationStep;
 			position.y += (HexFunctions.SampleNoise(HexFunctions.noiseColours, position, wrapSize).y * 2f - 1f) * HexFunctions.elevationPerturbStrength;
 			Position = position;
@@ -452,7 +452,7 @@ namespace DOTSHexagonsV2
 
 		public void RefreshPosition(NativeArray<float4> noiseColours)
 		{
-			Vector3 position = Position;
+			float3 position = Position;
 			position.y = elevation * HexFunctions.elevationStep;
 			position.y += (HexFunctions.SampleNoise(noiseColours, position, wrapSize).y * 2f - 1f) * HexFunctions.elevationPerturbStrength;
 			Position = position;
@@ -877,11 +877,10 @@ namespace DOTSHexagonsV2
 			switch (cell.hasOutgoingRiver && cell.OutgoingRiver == direction)
 			{
 				case false:
-					int neighbourIndex = GetNeighbourIndex(cell, direction);
-					switch (neighbourIndex != int.MinValue)
+					HexCell neighbour = GetNeighbour(cell, cells, direction);
+					switch ((bool)neighbour)
 					{
 						case true:
-							HexCell neighbour = cells[neighbourIndex];
 							switch (IsValidRiverDestination(cell, neighbour))
 							{
 								case true:
@@ -900,7 +899,7 @@ namespace DOTSHexagonsV2
 									neighbour.hasIncomingRiver = true;
 									neighbour.incomingRiver = direction.Opposite();
 									neighbour.SpecialIndex = 0;
-									cells[neighbourIndex] = neighbour;
+									cells[neighbour.Index] = neighbour;
 									break;
 							}
 							break;
@@ -916,11 +915,10 @@ namespace DOTSHexagonsV2
 			switch (cell.hasOutgoingRiver && cell.OutgoingRiver == direction)
 			{
 				case false:
-					int neighbourIndex = GetNeighbourIndex(cell, direction);
-					switch (neighbourIndex != int.MinValue)
+					HexCell neighbour = GetNeighbour(cell,cells, direction);
+					switch ((bool)neighbour)
 					{
 						case true:
-							HexCell neighbour = cells[neighbourIndex];
 							switch (IsValidRiverDestination(cell, neighbour))
 							{
 								case true:
@@ -939,7 +937,7 @@ namespace DOTSHexagonsV2
 									neighbour.hasIncomingRiver = true;
 									neighbour.incomingRiver = direction.Opposite();
 									neighbour.SpecialIndex = 0;
-									cells[neighbourIndex] = neighbour;
+									cells[neighbour.Index] = neighbour;
 									break;
 							}
 							break;
@@ -956,7 +954,7 @@ namespace DOTSHexagonsV2
 			{
 				case true:
 					cell.hasOutgoingRiver = false;
-					HexCell neighbor = cells[GetNeighbourIndex(cell, cell.outgoingRiver)];
+					HexCell neighbor = GetNeighbour(cell, cells, cell.outgoingRiver);
 					neighbor.hasIncomingRiver = false;
 					cells[cell.Index] = cell;
 					cells[neighbor.Index] = neighbor;
@@ -972,7 +970,7 @@ namespace DOTSHexagonsV2
 			{
 				case true:
 					cell.hasOutgoingRiver = false;
-					HexCell neighbor = cells[GetNeighbourIndex(cell, cell.outgoingRiver)];
+					HexCell neighbor = GetNeighbour(cell, cells, cell.outgoingRiver);
 					neighbor.hasIncomingRiver = false;
 					cells[cell.Index] = cell;
 					cells[neighbor.Index] = neighbor;
@@ -988,7 +986,7 @@ namespace DOTSHexagonsV2
 			{
 				case true:
 					cell.hasOutgoingRiver = false;
-					HexCell neighbor = cells[GetNeighbourIndex(cell, cell.outgoingRiver)];
+					HexCell neighbor = GetNeighbour(cell, cells, cell.outgoingRiver);
 					neighbor.hasOutgoingRiver = false;
 					cells[cell.Index] = cell;
 					cells[neighbor.Index] = neighbor;
@@ -1004,7 +1002,7 @@ namespace DOTSHexagonsV2
 			{
 				case true:
 					cell.hasOutgoingRiver = false;
-					HexCell neighbor = cells[GetNeighbourIndex(cell, cell.outgoingRiver)];
+					HexCell neighbor = GetNeighbour(cell, cells, cell.outgoingRiver);
 					neighbor.hasOutgoingRiver = false;
 					cells[cell.Index] = cell;
 					cells[neighbor.Index] = neighbor;
@@ -1023,11 +1021,11 @@ namespace DOTSHexagonsV2
 		public static HexCell ValidateRivers(NativeArray<HexCell> cells, HexCell cell)
 		{
 
-			if (cell.hasOutgoingRiver && !IsValidRiverDestination(cell, cells[GetNeighbourIndex(cell, cell.outgoingRiver)]))
+			if (cell.hasOutgoingRiver && !IsValidRiverDestination(cell,GetNeighbour(cell, cells, cell.outgoingRiver)))
 			{
 				cell = RemoveOutgoingRiver(cells, cell);
 			}
-			if (cell.hasIncomingRiver && !IsValidRiverDestination(cells[GetNeighbourIndex(cell, cell.outgoingRiver)], cell))
+			if (cell.hasIncomingRiver && !IsValidRiverDestination(GetNeighbour(cell, cells, cell.outgoingRiver), cell))
 			{
 				cell = RemoveIncomingRiver(cells, cell);
 			}
@@ -1039,11 +1037,11 @@ namespace DOTSHexagonsV2
 		public static HexCell ValidateRivers(DynamicBuffer<HexCell> cells, HexCell cell)
 		{
 
-			if (cell.hasOutgoingRiver && !IsValidRiverDestination(cell, cells[GetNeighbourIndex(cell, cell.outgoingRiver)]))
+			if (cell.hasOutgoingRiver && !IsValidRiverDestination(cell, GetNeighbour(cell, cells, cell.outgoingRiver)))
 			{
 				cell = RemoveOutgoingRiver(cells, cell);
 			}
-			if (cell.hasIncomingRiver && !IsValidRiverDestination(cells[GetNeighbourIndex(cell, cell.outgoingRiver)], cell))
+			if (cell.hasIncomingRiver && !IsValidRiverDestination(GetNeighbour(cell, cells, cell.outgoingRiver), cell))
 			{
 				cell = RemoveIncomingRiver(cells, cell);
 			}
@@ -1057,6 +1055,14 @@ namespace DOTSHexagonsV2
 			return this.Index == other.Index;
 		}
 
+		//public static implicit operator null(HexCell v) { return HexCell.Null; }
+
+		public static implicit operator bool (HexCell c)=> c.Index != int.MinValue;
+
+		public static bool operator ==(HexCell lhs, HexCell rhs)=> lhs.Index == rhs.Index;
+
+		public static bool operator !=(HexCell lhs, HexCell rhs)=> !(lhs == rhs);
+		
 		public static HexCell SetRoad(NativeArray<HexCell> cells, HexCell cell, HexDirection direction, bool state = true)
 		{
 			HexCell neighbour = GetNeighbour(cell, cells, direction);
@@ -1081,7 +1087,24 @@ namespace DOTSHexagonsV2
 			cells[neighbour.Index] = neighbour;
 			return cell;
 		}
-	}
+
+
+		public static bool IsValidDestination(HexCell cell)
+		{
+			return cell.IsExplored && !cell.IsUnderwater;
+		}
+
+
+		public override int GetHashCode()
+        {
+            return -2134847229 + Index.GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            return base.Equals(obj);
+        }
+    }
 
 
 	public struct FeatureGridInfo : IComponentData
@@ -1240,4 +1263,38 @@ namespace DOTSHexagonsV2
 		public static implicit operator HexCellTransitioningCells(int v) { return new HexCellTransitioningCells { Value = v }; }
 		public int Value;
 	}
+
+
+	public struct HexUnitComp : IComponentData
+    {
+		public Entity GridEntity;
+		public float travelSpeed;
+		public int Speed;
+		public float rotationSpeed;
+		public int visionRange;
+
+		public float orientation;
+	}
+	public struct HexUnitLocation : IComponentData
+    {
+		public HexCell Cell;
+    }
+	public struct HexUnitCurrentTravelLocation : IComponentData
+	{
+		public HexCell Cell;
+	}
+	public struct HexUnitPathToTravel : IBufferElementData
+	{
+		public static implicit operator HexCell(HexUnitPathToTravel v) { return v.Cell; }
+		public static implicit operator HexUnitPathToTravel(HexCell v) { return new HexUnitPathToTravel { Cell = v }; }
+		public HexCell Cell;
+	}
+
+	public struct HexUnitPathTo : IComponentData
+	{
+		public static implicit operator HexCell(HexUnitPathTo v) { return v.Cell; }
+		public static implicit operator HexUnitPathTo(HexCell v) { return new HexUnitPathTo { Cell = v }; }
+		public HexCell Cell;
+	}
+
 }
