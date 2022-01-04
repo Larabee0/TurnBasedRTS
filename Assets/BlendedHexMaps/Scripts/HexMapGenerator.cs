@@ -171,7 +171,7 @@ namespace DOTSHexagonsV2
             }
         }
     }
-
+    [UpdateInGroup(typeof(HexGridV2SystemGroup))]
     public class HexMapGeneratorSystem : JobComponentSystem
     {
         private EndSimulationEntityCommandBufferSystem ecbEndSystem;
@@ -422,7 +422,7 @@ namespace DOTSHexagonsV2
                 int size = 0;
                 while (size < chunkSize && searchFrontier.Count > 0)
                 {
-                    HexCell current = cells[searchFrontier.Dequeue()];
+                    HexCell current = cells[searchFrontier.DequeueIndex()];
                     int originalElevation = current.Elevation;
                     int newElevation = originalElevation + rise;
 
@@ -485,7 +485,7 @@ namespace DOTSHexagonsV2
                 int size = 0;
                 while (size < chunkSize && searchFrontier.Count > 0)
                 {
-                    HexCell current = cells[searchFrontier.Dequeue()];
+                    HexCell current = cells[searchFrontier.DequeueIndex()];
                     int originalElevation = current.Elevation;
                     int newElevation = originalElevation - sink;
 

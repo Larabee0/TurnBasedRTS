@@ -6,6 +6,7 @@ using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
+using UnityEngine.Rendering.HighDefinition;
 
 namespace DOTSHexagonsV2
 {
@@ -20,6 +21,7 @@ namespace DOTSHexagonsV2
         [SerializeField] private HexGridColumn gridColumnPrefab;
         [SerializeField] private HexGridChunk gridChunkPrefab;
 
+        [SerializeField] private DecalProjector cellHighlight;
 
         [SerializeField] private Transform wallTower;
         [SerializeField] private Transform bridge;
@@ -28,11 +30,14 @@ namespace DOTSHexagonsV2
         [SerializeField] private FeatureCollection[] farmCollections;
         [SerializeField] private FeatureCollection[] plantCollections;
 
+        [SerializeField] private HexUnit defaultUnit;
 
         [SerializeField] private Texture2D noiseSource;
 
         public HexGridChunk GridChunkPrefab { get { return gridChunkPrefab; } }
         public HexGridColumn GridColumnPrefab { get { return gridColumnPrefab; } }
+
+        public DecalProjector CellHighlight { get { return cellHighlight; } }
 
         public Transform WallTower { get { return wallTower; } }
         public Transform Bridge { get { return bridge; } }
@@ -42,19 +47,31 @@ namespace DOTSHexagonsV2
         public FeatureCollection[] PlantCollections { get { return plantCollections; } }
 
         private FeatureDecisionSystem FDS;
+        private EntityManager entityManager;
+
+        public HexUnit DefaultUnit { get { return defaultUnit; } }
+        public EntityArchetype defaultUnitArchetype;
 
         private void Awake()
         {
             HexFunctions.noiseSource = noiseSource;
             HexFunctions.SetNoiseColours();
+            entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
             FDS = World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<FeatureDecisionSystem>();
             FDS.internalPrefabs = this;
             FDS.CreateEntityWorldInfo();
+
+            defaultUnitArchetype = entityManager.CreateArchetype(typeof(HexUnitComp), typeof(HexUnitLocation), typeof(HexUnitCurrentTravelLocation));
         }
 
         private void OnDestroy()
         {
             HexFunctions.CleanUpNoiseColours();
+        }
+
+        public T InstantiatePrefab<T>(T obj) where T: MonoBehaviour
+        {
+            return Instantiate(obj);
         }
 
         public HexGridFeatureInfo InstinateFeature(CellFeature feature)
@@ -77,6 +94,11 @@ namespace DOTSHexagonsV2
             {
                 Destroy(feature.gameObject);
             }
+        }
+
+        public void DestroyObject(GameObject obj)
+        {
+            Destroy(obj);
         }
 
         public Transform GetSpecialFeature(int index) { return SpecialFeatures[index]; }

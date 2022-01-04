@@ -281,12 +281,6 @@ namespace DOTSHexagonsV2
             public FeatureType CollectionType;
         }
 
-        private struct GridEntitiesArchIndex
-        {
-            public int ChunkArrayIndex;
-            public int ChunkIndex;
-        }
-
         public void CreateEntityWorldInfo()
         {
             try
@@ -319,6 +313,12 @@ namespace DOTSHexagonsV2
             catch { }
         }
 
+    }
+
+    public struct GridEntitiesArchIndex
+    {
+        public int ChunkArrayIndex;
+        public int ChunkIndex;
     }
 
     //[DisableAutoCreation]

@@ -816,8 +816,52 @@ namespace DOTSHexagonsV2
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static HexCell GetNeighbour(int cellIndex, NativeArray<HexCell> cells, HexDirection direction)
+		{
+			HexCell cell = cells[cellIndex];
+			int neighbourIndex = direction switch
+			{
+				HexDirection.NE => cell.NeighbourNE,
+				HexDirection.E => cell.NeighbourE,
+				HexDirection.SE => cell.NeighbourSE,
+				HexDirection.SW => cell.NeighbourSW,
+				HexDirection.W => cell.NeighbourW,
+				HexDirection.NW => cell.NeighbourNW,
+				_ => int.MinValue,
+			};
+
+			if (neighbourIndex == int.MinValue)
+			{
+				return HexCell.Null;
+			}
+			return cells[neighbourIndex];
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static HexCell GetNeighbour(HexCell cell, DynamicBuffer<HexCell> cells, HexDirection direction)
 		{
+			int neighbourIndex = direction switch
+			{
+				HexDirection.NE => cell.NeighbourNE,
+				HexDirection.E => cell.NeighbourE,
+				HexDirection.SE => cell.NeighbourSE,
+				HexDirection.SW => cell.NeighbourSW,
+				HexDirection.W => cell.NeighbourW,
+				HexDirection.NW => cell.NeighbourNW,
+				_ => int.MinValue,
+			};
+
+			if (neighbourIndex == int.MinValue)
+			{
+				return HexCell.Null;
+			}
+			return cells[neighbourIndex];
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static HexCell GetNeighbour(int cellIndex, DynamicBuffer<HexCell> cells, HexDirection direction)
+		{
+			HexCell cell = cells[cellIndex];
 			int neighbourIndex = direction switch
 			{
 				HexDirection.NE => cell.NeighbourNE,
@@ -1091,7 +1135,33 @@ namespace DOTSHexagonsV2
 
 		public static bool IsValidDestination(HexCell cell)
 		{
-			return cell.IsExplored && !cell.IsUnderwater;
+			//return cell.IsExplored && !cell.IsUnderwater;
+			return !cell.IsUnderwater;
+		}
+
+
+		public static int GetMoveCost(HexCell fromCell, HexCell toCell, HexDirection direction)
+		{
+			HexEdgeType edgeType = GetEdgeType(fromCell,toCell);
+			if (edgeType == HexEdgeType.Cliff)
+			{
+				return -1;
+			}
+			int moveCost;
+			if (HasRoadThroughEdge(fromCell, direction))
+			{
+				moveCost = 1;
+			}
+			else if (fromCell.Walled != toCell.Walled)
+			{
+				return -1;
+			}
+			else
+			{
+				moveCost = edgeType == HexEdgeType.Flat ? 5 : 10;
+				moveCost += toCell.urbanLevel + toCell.farmLevel + toCell.plantLevel;
+			}
+			return moveCost;
 		}
 
 
@@ -1274,19 +1344,24 @@ namespace DOTSHexagonsV2
 		public int visionRange;
 
 		public float orientation;
+		public Entity Self;
 	}
 	public struct HexUnitLocation : IComponentData
-    {
+	{
+		public static implicit operator HexCell(HexUnitLocation v) { return v.Cell; }
+		public static implicit operator HexUnitLocation(HexCell v) { return new HexUnitLocation { Cell = v }; }
 		public HexCell Cell;
     }
 	public struct HexUnitCurrentTravelLocation : IComponentData
 	{
+		public static implicit operator HexCell(HexUnitCurrentTravelLocation v) { return v.Cell; }
+		public static implicit operator HexUnitCurrentTravelLocation(HexCell v) { return new HexUnitCurrentTravelLocation { Cell = v }; }
 		public HexCell Cell;
 	}
-	public struct HexUnitPathToTravel : IBufferElementData
+	public struct HexPath : IBufferElementData
 	{
-		public static implicit operator HexCell(HexUnitPathToTravel v) { return v.Cell; }
-		public static implicit operator HexUnitPathToTravel(HexCell v) { return new HexUnitPathToTravel { Cell = v }; }
+		public static implicit operator HexCell(HexPath v) { return v.Cell; }
+		public static implicit operator HexPath(HexCell v) { return new HexPath { Cell = v }; }
 		public HexCell Cell;
 	}
 
@@ -1297,4 +1372,57 @@ namespace DOTSHexagonsV2
 		public HexCell Cell;
 	}
 
+	public struct HexFromCell : IComponentData
+    {
+		public static implicit operator HexCell(HexFromCell v) { return v.Cell; }
+		public static implicit operator HexFromCell(HexCell v) { return new HexFromCell { Cell = v }; }
+		public HexCell Cell;
+	}
+	public struct HexToCell : IComponentData
+	{
+		public static implicit operator HexCell(HexToCell v) { return v.Cell; }
+		public static implicit operator HexToCell(HexCell v) { return new HexToCell { Cell = v }; }
+		public HexCell Cell;
+	}
+	public struct FindPath : IComponentData
+	{
+		public static implicit operator PathFindingOptions(FindPath v) { return v.Options; }
+		public static implicit operator FindPath(PathFindingOptions v) { return new FindPath { Options = v }; }
+		public PathFindingOptions Options;
+	}
+
+	public struct PathFindingOptions
+	{
+		public static implicit operator PathFindingOptions(HexUnitComp v) 
+		{
+			return new PathFindingOptions
+			{
+				GridEntity = v.GridEntity,
+				travelSpeed = v.travelSpeed,
+				Speed = v.Speed,
+				rotationSpeed = v.rotationSpeed,
+				visionRange = v.visionRange,
+				orientation = v.orientation,
+			};
+		}
+		//public static implicit operator HexUnitComp(PathFindingOptions v)
+		//{ 
+		//	return new HexUnitComp 
+		//	{ 
+		//		Options = v 
+		//	}; 
+		//}
+		public Entity GridEntity;
+		public float travelSpeed;
+		public int Speed;
+		public float rotationSpeed;
+		public int visionRange;
+
+		public float orientation;
+
+		public int searchFrontierPhase;
+	}
+
+	public struct FoundPath : IComponentData { }
+	public struct NotFoundPath : IComponentData { }
 }

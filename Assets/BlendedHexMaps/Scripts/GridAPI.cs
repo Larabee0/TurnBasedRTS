@@ -7,6 +7,7 @@ using Unity.Jobs;
 using Unity.Collections;
 using UnityEngine.Rendering;
 using Unity.Burst;
+using UnityEngine.Rendering.HighDefinition;
 
 namespace DOTSHexagonsV2
 {
@@ -29,6 +30,8 @@ namespace DOTSHexagonsV2
         public List<HexGridChunk> GridChunks = new List<HexGridChunk>();
         public Dictionary<int, HexGridChunk> GridChunksDict = new Dictionary<int, HexGridChunk>();
         public List<HexGridColumn> GridColumns = new List<HexGridColumn>();
+
+        public List<HexUnit> units = new List<HexUnit>();
 
         public int cellCountX = 20;
         public int cellCountZ = 15;
@@ -219,6 +222,191 @@ namespace DOTSHexagonsV2
             GridChunks[0].TerrianMesh = terrianMesh;
             Debug.Log("Debug mesh repaint");
         }
+
+        public void RemoveUnit(HexUnit unit)
+        {
+            units.Remove(unit);
+            // decrease visibility;
+            Destroy(unit.gameObject);
+        }
+
+        public void AddUnit(HexCell cell)
+        {
+            HexUnit unit = Prefabs.InstantiatePrefab(Prefabs.DefaultUnit);
+            units.Add(unit);
+            Entity unitEntity = entityManager.CreateEntity(Prefabs.defaultUnitArchetype);
+            HexUnitComp unitComp = new HexUnitComp
+            {
+                GridEntity = cell.grid,
+                Self = unitEntity,
+                Speed = 24,
+                travelSpeed = 4f,
+                rotationSpeed = 180f,
+                visionRange = 3
+            };
+            entityManager.SetComponentData(unitEntity, unitComp);
+            entityManager.SetComponentData<HexUnitLocation>(unitEntity, cell);
+            entityManager.SetComponentData<HexUnitCurrentTravelLocation>(unitEntity, HexCell.Null);
+
+            unit.Entity = unitEntity;
+            HexUnit.SetLocation(unit, cell);
+        }
+
+
+        public void MakeChildOfColumn(Transform child, int columnIndex)
+        {
+            child.SetParent(GridColumns[columnIndex].transform, false);
+        }
+
+    }
+
+    public class CellHighlightManager
+    {
+        public GridAPI grid;
+
+        public List<DecalProjector> projectors;
+
+        public CellHighlightManager (GridAPI grid)
+        {
+            this.grid = grid;
+            projectors = new List<DecalProjector>();
+        }
+
+        public void ShowPath(NativeArray<HexCell> path)
+        {
+            CreateProjectors(path.Length);
+            SetAllProjectColour(Color.white);
+            SetProjectorColour(0, Color.blue);
+            SetProjectorColour(path.Length - 1, Color.red);
+            PositionProjectors(path);
+            SetEnabledAll(true);
+        }
+
+        public void PositionProjectors(NativeArray<HexCell> path)
+        {
+            for (int i = 0; i < path.Length&& i<projectors.Count; i++)
+            {
+                PositionProjector(i, path[i]);
+            }
+        }
+
+        public void PositionProjector(int index, HexCell cell)
+        {
+            PositionProjector(index, cell.Position);
+        }
+
+        public void PositionProjector(int index, Vector3 position)
+        {
+            position.y += 0.5f;
+            projectors[index].transform.position = position;
+        }
+
+        public void CreateProjectors(int count)
+        {
+            if(projectors.Count > 0 && projectors.Count < count)
+            {
+                for (int i = projectors.Count-1; i < count; i++)
+                {
+                    InstinateHighlight();
+                }
+            }
+            else if(projectors.Count > 0 && projectors.Count > count)
+            {
+                for (int i = projectors.Count-1; i > count; i--)
+                {
+                    grid.Prefabs.DestroyObject(projectors[i].gameObject);
+                }
+            }
+            else if(projectors.Count == 0)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    InstinateHighlight();
+                }
+            }
+        }
+
+        public void InstinateHighlight()
+        {
+            DecalProjector projector = grid.Prefabs.InstantiatePrefab(grid.Prefabs.CellHighlight);
+            projector.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            projectors.Add(projector);
+        }
+
+        public void SetProjectorPosition(int index, Vector3 position)
+        {
+            position.y += 1f;
+            projectors[index].transform.position = position;
+        }
+
+        public void SetProjectorColour(int index, Color colour)
+        {
+            projectors[index].material.color = colour;
+        }
+
+        public void SetProjectorColourEnd(int end, Color colour)
+        {
+            for (int i = 0; i < projectors.Count && i < end; i++)
+            {
+                projectors[i].material.color = colour;
+            }
+        }
+
+        public void SetProjectorColourStart(int start, Color colour)
+        {
+            for (int i = start; i < projectors.Count; i++)
+            {
+                projectors[i].material.color = colour;
+            }
+        }
+
+        public void SetProjectorColourRange(int start, int end, Color colour)
+        {
+            for (int i = start; i < projectors.Count && i < end; i++)
+            {
+                projectors[i].material.color = colour;
+            }
+        }
+
+        public void SetAllProjectColour(Color colour)
+        {
+            projectors.ForEach((DecalProjector projector) => projector.material.color = colour);
+        }
+
+        public void SetEnabled(int index, bool enabled = false)
+        {
+            projectors[index].enabled = enabled;
+        }
+
+        public void SetEnabledAll(bool enabled = false)
+        {
+            projectors.ForEach((DecalProjector projector) => projector.enabled = enabled);
+        }
+
+        public void SetEnabledEnd(int end, bool enabled = false)
+        {
+            for (int i = 0; i < projectors.Count && i < end; i++)
+            {
+                projectors[i].enabled = enabled;
+            }
+        }
+
+        public void SetEnabledStart(int start, bool enabled = false)
+        {
+            for (int i = start; i < projectors.Count; i++)
+            {
+                projectors[i].enabled = enabled;
+            }
+        }
+
+        public void SetEnabledRange(int start, int end, bool enabled = false)
+        {
+            for (int i = start; i < projectors.Count && i < end; i++)
+            {
+                projectors[i].enabled = enabled;
+            }
+        }
+
     }
 
     [UpdateBefore(typeof(HexGridV2SystemGroup))]

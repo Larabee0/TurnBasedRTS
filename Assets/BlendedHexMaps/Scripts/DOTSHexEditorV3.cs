@@ -14,9 +14,11 @@ namespace DOTSHexagonsV2
 		public static DOTSHexEditorV3 Instance;
 		public static List<Entity> GridEntities = new List<Entity>();
 		int index = -1;
+		public GridAPI grid;
 		public HexMapGenerator generator;
 		public HexGridComponent hexGridInfo;
 		public Material terrianMaterial;
+		public LayerMask unitLayerMask;
 		public EndSimulationEntityCommandBufferSystem commandBufferSystem;
 		public EntityManager entityManager;
 		private HexGridShaderSystem shaderData;
@@ -160,17 +162,35 @@ namespace DOTSHexagonsV2
             {
 				shaderData.ScheduleRefreshAll();
             }
-			//if (Input.GetKeyUp(KeyCode.U))
-			//{
-			//	if (Input.GetKey(KeyCode.LeftShift))
-			//	{
-			//		DestroyUnit();
-			//		return;
-			//	}
-			//	CreateUnit();
-			//	return;
-			//}
+			if (Input.GetKeyUp(KeyCode.U))
+			{
+				if (Input.GetKey(KeyCode.LeftShift))
+				{
+					DestroyUnit();
+					return;
+				}
+				CreateUnit();
+				return;
+			}
 			previousCell = HexCell.Null;
+		}
+
+		private void CreateUnit()
+		{
+			HexCell cell = GetCellUnderCursor();
+			if (cell)
+			{
+				grid.AddUnit(cell);
+			}
+		}
+
+		private void DestroyUnit()
+		{
+			HexUnit unit = GetUnitUnderCursor();
+			if (unit)
+			{
+				grid.RemoveUnit(unit);
+			}
 		}
 
 		private void OnDestroy()
@@ -208,6 +228,16 @@ namespace DOTSHexagonsV2
 			previousCell = currentCell;
 
 		}
+
+		private HexUnit GetUnitUnderCursor()
+        {
+			Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+			if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, unitLayerMask))
+			{
+				return hit.collider.gameObject.AddComponent<HexUnit>();
+			}
+			return null;
+        }
 
 		private HexCell GetCellUnderCursor()
 		{

@@ -77,7 +77,7 @@ namespace DOTSHexagonsV2
 	}
 
 	public static class HexFunctions
-    {
+	{
 		public const float bridgeDesignLength = 7f;
 
 		public const float wallYOffset = -1f;
@@ -439,6 +439,8 @@ namespace DOTSHexagonsV2
 			float angle = ExtraTurretMathsFunctions.Angle(aFrom, aTo);
 			return quaternion.AxisAngle(math.normalize(axis), angle);
 		}
+
+		
 	}
 
 	public static class Bezier
@@ -577,7 +579,7 @@ namespace DOTSHexagonsV2
 			list[priority] = cell.cellIndex;
 		}
 
-		public int Dequeue()
+		public int DequeueIndex()
 		{
 			count -= 1;
 			for (; minimum < list.Length; minimum++)
@@ -592,8 +594,24 @@ namespace DOTSHexagonsV2
 			return int.MinValue;
 		}
 
+		public HexCellQueueElement DequeueElement()
+		{
+			count -= 1;
+			for (; minimum < list.Length; minimum++)
+			{
+				int potentialCell = list[minimum];
+				if (potentialCell != int.MinValue)
+				{
+					list[minimum] = elements[potentialCell].NextWithSamePriority;
+					return elements[potentialCell];
+				}
+			}
+			return HexCellQueueElement.Null;
+		}
+
 		public void Change(HexCellQueueElement cell, int oldPriority)
 		{
+			elements[cell.cellIndex] = cell;
 			int current = list[oldPriority];
 			int next = elements[current].NextWithSamePriority;
 
@@ -635,9 +653,9 @@ namespace DOTSHexagonsV2
 		}
 	}
 
-	public struct HexCellQueueElement
+	public struct HexCellQueueElement : IBufferElementData
 	{
-		public static HexCellQueueElement Null = new HexCellQueueElement { cellIndex = int.MinValue, NextWithSamePriority = int.MinValue, SearchPhase = int.MinValue, PathFrom = int.MinValue };
+		public static readonly HexCellQueueElement Null = new HexCellQueueElement { cellIndex = int.MinValue, NextWithSamePriority = int.MinValue, SearchPhase = int.MinValue, PathFrom = int.MinValue };
 		public int cellIndex;
 		public int SearchPriority { get { return Distance + SearchHeuristic; } }
 		public int NextWithSamePriority;

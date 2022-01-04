@@ -7225,6 +7225,18 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+      - m_Target: {fileID: 1333539452}
+        m_TargetAssemblyTypeName: DOTSHexagonsV2.HexUI, Assembly-CSharp
+        m_MethodName: SetEditMode
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
   m_IsOn: 1
 --- !u!1 &1062918576
 GameObject:
@@ -8630,6 +8642,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1333539450}
   - component: {fileID: 1333539451}
+  - component: {fileID: 1333539452}
   m_Layer: 5
   m_Name: Editor
   m_TagString: Untagged
@@ -8670,8 +8683,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c6377d28c00dd7e44bfb8cab82ec72af, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  grid: {fileID: 1771999945}
   generator: {fileID: 1771999948}
   terrianMaterial: {fileID: 2100000, guid: c3d0007bab6dca546a80099903eb85fe, type: 2}
+  unitLayerMask:
+    serializedVersion: 2
+    m_Bits: 128
+--- !u!114 &1333539452
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1333539449}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b01337c8d64f3f4f89a962bca55ac20, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  unitLayerMask:
+    serializedVersion: 2
+    m_Bits: 128
 --- !u!1 &1335707588
 GameObject:
   m_ObjectHideFlags: 0
@@ -11309,6 +11341,7 @@ MonoBehaviour:
   GridContainer: {fileID: 1570297239}
   GridChunks: []
   GridColumns: []
+  units: []
   cellCountX: 20
   cellCountZ: 15
   wrapping: 0
@@ -11340,6 +11373,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gridColumnPrefab: {fileID: 6351141363131410625, guid: 4c1b464e00e681a49a5bdf2eac185b57, type: 3}
   gridChunkPrefab: {fileID: 7874830607128136338, guid: 95b39df40e3f2f54486bf7aac8521a93, type: 3}
+  cellHighlight: {fileID: 5404926894825058258, guid: f5c32788ff527a047be7597acbacc81b, type: 3}
   wallTower: {fileID: 5151144053563276192, guid: 11a6e72f4c4abd841a69304633928698, type: 3}
   bridge: {fileID: 2400413479323601189, guid: 807091713a8abde40a2c1422abcdb357, type: 3}
   specialFeatures:
@@ -11376,6 +11410,7 @@ MonoBehaviour:
   - prefabs:
     - {fileID: 90487333685931227, guid: 8cd91ba6050ac924e849486413aa4926, type: 3}
     - {fileID: 5054112726769783609, guid: 6723984a49389f74ca7f4a1a0d469efc, type: 3}
+  defaultUnit: {fileID: 5193621330870329156, guid: af5fb386479eb494cb0b405cb61a6d61, type: 3}
   noiseSource: {fileID: 2800000, guid: b9e37f518e7a650448a6a59ee52a6405, type: 3}
 --- !u!114 &1771999948
 MonoBehaviour:
