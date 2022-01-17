@@ -122,8 +122,8 @@ namespace DOTSHexagonsV2
 			{
 				for (int i = 0; i < 1; i++)
 				{
-					generator.GenerateMap(32, 24, true);
-					//generator.GenerateMap(80, 60, true);
+					//generator.GenerateMap(32, 24, true);
+					generator.GenerateMap(80, 60, true);
 				}
 				//if (GridEntities.Count == 0)
 				//{

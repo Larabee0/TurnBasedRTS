@@ -1467,12 +1467,12 @@ namespace DOTSHexagonsV2
 		private void WallsAddTriangleInfoUnperturbed(int wrapSize, MeshBasic wallMesh, float3 v1, float3 v2, float3 v3)
 		{
 			uint vertexIndex = wallMesh.VertexIndex;
-			wallMesh.vertices[0] = HexFunctions.Perturb(noiseColours, v1, wrapSize);
-			wallMesh.vertices[1] = HexFunctions.Perturb(noiseColours, v2, wrapSize);
-			wallMesh.vertices[2] = HexFunctions.Perturb(noiseColours, v3, wrapSize);
-			wallMesh.triangles[0] = vertexIndex;
-			wallMesh.triangles[1] = vertexIndex + 1;
-			wallMesh.triangles[2] = vertexIndex + 2;
+			wallMesh.verticesInternalTri[0] = HexFunctions.Perturb(noiseColours, v1, wrapSize);
+			wallMesh.verticesInternalTri[1] = HexFunctions.Perturb(noiseColours, v2, wrapSize);
+			wallMesh.verticesInternalTri[2] = HexFunctions.Perturb(noiseColours, v3, wrapSize);
+			wallMesh.trianglesInternalTri[0] = vertexIndex;
+			wallMesh.trianglesInternalTri[1] = vertexIndex + 1;
+			wallMesh.trianglesInternalTri[2] = vertexIndex + 2;
 			wallMesh.ApplyTriangle();
 		}
 
@@ -1480,16 +1480,16 @@ namespace DOTSHexagonsV2
 		private void WallsAddQuadInfoUnperturbed(MeshBasic wallMesh, float3 v1, float3 v2, float3 v3, float3 v4)
 		{
 			uint vertexIndex = wallMesh.VertexIndex;
-			wallMesh.vertices[0] = v1;
-			wallMesh.vertices[1] = v2;
-			wallMesh.vertices[2] = v3;
-			wallMesh.vertices[3] = v4;
-			wallMesh.triangles[0] = vertexIndex;
-			wallMesh.triangles[1] = vertexIndex + 2;
-			wallMesh.triangles[2] = vertexIndex + 1;
-			wallMesh.triangles[3] = vertexIndex + 1;
-			wallMesh.triangles[4] = vertexIndex + 2;
-			wallMesh.triangles[5] = vertexIndex + 3;
+			wallMesh.verticesInternalQuad[0] = v1;
+			wallMesh.verticesInternalQuad[1] = v2;
+			wallMesh.verticesInternalQuad[2] = v3;
+			wallMesh.verticesInternalQuad[3] = v4;
+			wallMesh.trianglesInternalQuad[0] = vertexIndex;
+			wallMesh.trianglesInternalQuad[1] = vertexIndex + 2;
+			wallMesh.trianglesInternalQuad[2] = vertexIndex + 1;
+			wallMesh.trianglesInternalQuad[3] = vertexIndex + 1;
+			wallMesh.trianglesInternalQuad[4] = vertexIndex + 2;
+			wallMesh.trianglesInternalQuad[5] = vertexIndex + 3;
 			wallMesh.ApplyQuad();
 		}
 		#endregion

@@ -200,7 +200,7 @@ namespace DOTSHexagonsV2
 
                 HexHash hash = HexFunctions.SampleHashGrid(HashGrid, possibleFeature.position);
                 InternalFeatureStore prefab = PickPrefab(FeatureType.Urban, cell.urbanLevel, hash.a, hash.d);
-                InternalFeatureStore prefabAlt = PickPrefab(FeatureType.Urban, cell.farmLevel, hash.b, hash.d);
+                InternalFeatureStore prefabAlt = PickPrefab(FeatureType.Farm, cell.farmLevel, hash.b, hash.d);
 
                 float useHash = hash.a;
                 if(prefab.featureType != FeatureType.None)
