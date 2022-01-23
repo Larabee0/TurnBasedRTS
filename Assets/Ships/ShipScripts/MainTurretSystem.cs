@@ -449,7 +449,7 @@ public class TurretIsAimedSystem : JobComponentSystem
         return jobHandle;
     }
 }
-[UpdateAfter(typeof(TurretIsAimedSystem))]
+[UpdateAfter(typeof(TurretIsAimedSystem))][DisableAutoCreation]
 public class TurretToTargetSystem : JobComponentSystem
 {
     private EndSimulationEntityCommandBufferSystem endSimulationCommandBuffer;
@@ -580,6 +580,94 @@ public class TurretToTargetSystem : JobComponentSystem
         return jobHandle;
     }
 }
+
+[UpdateAfter(typeof(TurretIsAimedSystem))]
+public class TurretToTargetSystemV2 : JobComponentSystem
+{
+    private EndSimulationEntityCommandBufferSystem endSimulationCommandBuffer;
+    private EntityQuery TargetQuery;
+    private EntityQuery HoriztonalEntitiesQuery;
+    private EntityQuery VerticalEntitiesQuery;
+    private EntityQuery TurretEntitiesQuery;
+
+    protected override void OnCreate()
+    {
+        endSimulationCommandBuffer = World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
+        TargetQuery =GetEntityQuery( new EntityQueryDesc
+        {
+            All = new ComponentType[] { typeof(Target), typeof(LocalToWorld) }
+        });
+        HoriztonalEntitiesQuery = GetEntityQuery(new EntityQueryDesc
+        {
+            All = new ComponentType[] { typeof(Parent), typeof(Translation), typeof(LocalToWorld), typeof(TurretHoriztonalAxisData) }
+        });
+        VerticalEntitiesQuery = GetEntityQuery(new EntityQueryDesc
+        {
+            All = new ComponentType[] { typeof(Parent), typeof(Translation), typeof(LocalToWorld), typeof(TurretVerticalAxisData) }
+        });
+        TurretEntitiesQuery = GetEntityQuery(new EntityQueryDesc
+        {
+            All = new ComponentType[] { typeof(TurretTarget), typeof(TurretMovementData), typeof(LocalToWorld) },
+            None = new ComponentType[] { typeof(TurretIsIdle), typeof(NewTurret), typeof(TurretIsAimed) }
+        });
+    }
+    protected override JobHandle OnUpdate(JobHandle inputDeps)
+    {
+        if (TurretEntitiesQuery.CalculateEntityCount() == 0)
+        {
+            return inputDeps;
+        }
+        #region Time and ParallelCommandBuffer
+        float deltaTime = Time.DeltaTime;
+        EntityCommandBuffer.ParallelWriter commandBuffer = endSimulationCommandBuffer.CreateCommandBuffer().AsParallelWriter();
+        #endregion
+        #region Target Entities and Positions
+        NativeArray<Entity> targetEntityArray = TargetQuery.ToEntityArray(Allocator.Temp);
+        NativeArray<LocalToWorld> targetTranslationArray = TargetQuery.ToComponentDataArray<LocalToWorld>(Allocator.Temp);
+        NativeHashMap<Entity, float3> targetMap = new NativeHashMap<Entity, float3>(targetEntityArray.Length, Allocator.TempJob);
+        for (int i = 0; i < targetEntityArray.Length; i++)
+        {
+            targetMap.Add(targetEntityArray[i], targetTranslationArray[i].Position);
+        }
+        #endregion
+        #region GetTurretComponents
+
+        NativeArray<LocalToWorld> HorizontalArray = HoriztonalEntitiesQuery.ToComponentDataArray<LocalToWorld>(Allocator.Temp);
+        NativeArray<Entity> HorizontalEntityArray = HoriztonalEntitiesQuery.ToEntityArray(Allocator.Temp);
+        NativeArray<LocalToWorld> VerticalArray = VerticalEntitiesQuery.ToComponentDataArray<LocalToWorld>(Allocator.Temp);
+        NativeArray<Entity> VerticalEntityArray = VerticalEntitiesQuery.ToEntityArray(Allocator.Temp);
+        NativeHashMap<Entity, LocalToWorld> HorizontalSide = new NativeHashMap<Entity, LocalToWorld>(HorizontalEntityArray.Length, Allocator.TempJob);
+        NativeHashMap<Entity, LocalToWorld> VerticalSide = new NativeHashMap<Entity, LocalToWorld>(VerticalEntityArray.Length, Allocator.TempJob);
+
+        for (int i = 0; i < HorizontalEntityArray.Length; i++)
+        {
+            HorizontalSide.Add(HorizontalEntityArray[i], HorizontalArray[i]);
+            VerticalSide.Add(VerticalEntityArray[i], VerticalArray[i]);
+        }
+        #endregion
+
+        TurretToTargetJob job = new TurretToTargetJob
+        {
+            targetMap = targetMap,
+            HorizontalSide = HorizontalSide,
+            VerticalSide = VerticalSide,
+            localToWorldTypeHandle = GetComponentTypeHandle<LocalToWorld>(true),
+            turretInTypeHandle = GetComponentTypeHandle<TurretMovementData>(true),
+            turretTargetTypeHandle = GetComponentTypeHandle<TurretTarget>(true),
+            deltaTime = deltaTime,
+            ecb = endSimulationCommandBuffer.CreateCommandBuffer().AsParallelWriter()
+        };
+
+        JobHandle outputDeps = job.ScheduleParallel(TurretEntitiesQuery, 64,inputDeps);
+        outputDeps = HorizontalSide.Dispose(outputDeps);
+        outputDeps = VerticalSide.Dispose(outputDeps);
+        outputDeps = targetMap.Dispose(outputDeps);
+        endSimulationCommandBuffer.AddJobHandleForProducer(outputDeps);
+
+        return outputDeps;
+    }
+}
+
 public struct Target : IComponentData { }
 public struct IdleTurret : IComponentData { }
 
@@ -716,6 +804,15 @@ public static class ExtraTurretMathsFunctions
     {
         if (math.abs(target - current) <= maxDelta)
             return target;
+        //return current + math.sign(target - current) * maxDelta;
+        return (current > target) ? current + math.sign(target - current) * maxDelta : current - math.sign(target - current) * maxDelta;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    static public float MoveTowardsABS(float current, float target, float maxDelta)
+    {
+        if (math.abs(target - current) <= maxDelta)
+            return target;
         return current + math.sign(target - current) * maxDelta;
     }
 
@@ -838,6 +935,82 @@ public struct FindTargetBurstJob : IJobEntityBatch
             entityCommandBuffer.AddComponent(batchIndex, turretMovementDatas[i].Self, new TurretTarget { Entity = closestTargetEntity });
             closestTargetEntity = Entity.Null;
             closetTargetPosition = float3.zero;
+        }
+    }
+}
+
+[BurstCompile]
+public struct TurretToTargetJob : IJobEntityBatch
+{
+    [ReadOnly]
+    public NativeHashMap<Entity, float3> targetMap;
+
+    [ReadOnly]
+    public NativeHashMap<Entity, LocalToWorld> HorizontalSide;
+    [ReadOnly]
+    public NativeHashMap<Entity, LocalToWorld> VerticalSide;
+
+    [ReadOnly]
+    public ComponentTypeHandle<LocalToWorld> localToWorldTypeHandle;
+    [ReadOnly]
+    public ComponentTypeHandle<TurretMovementData> turretInTypeHandle;
+    [ReadOnly]
+    public ComponentTypeHandle<TurretTarget> turretTargetTypeHandle;
+
+    public float deltaTime;
+
+    public EntityCommandBuffer.ParallelWriter ecb;
+    public void Execute(ArchetypeChunk batchInChunk, int batchIndex)
+    {
+        NativeArray<TurretTarget> turretTargetData = batchInChunk.GetNativeArray(turretTargetTypeHandle);
+        NativeArray<TurretMovementData> turretInData = batchInChunk.GetNativeArray(turretInTypeHandle);
+        NativeArray<LocalToWorld> turretLocalToWorldData = batchInChunk.GetNativeArray(localToWorldTypeHandle);
+        for (int i = 0; i < turretInData.Length; i++)
+        {
+            LocalToWorld turretLocalToWorld = turretLocalToWorldData[i];
+            TurretMovementData turret = turretInData[i];
+            LocalToWorld HorizontalLocalToWorld = HorizontalSide[turret.HorizontalEntity];
+            LocalToWorld VerticalLocalToWorld = VerticalSide[turret.VerticalEntity];
+            float3 targetPosition = targetMap[turretTargetData[i].Entity];
+            float3 basePos = HorizontalLocalToWorld.Position;
+            float3 VerticalPos = VerticalLocalToWorld.Position;
+            //float3 HorizontalFoward = HorizontalLocalToWorld.Forward;
+            float3 turretUp = turretLocalToWorld.Up;
+            float3 turretForward = turretLocalToWorld.Forward;
+
+            float3 vecToTarget = targetPosition - basePos;
+            float3 flattenedVecForBase = ExtraTurretMathsFunctions.ProjectOnPlane(vecToTarget, turretUp);
+            float targetTraverse = ExtraTurretMathsFunctions.SignedAngle(turretForward, flattenedVecForBase, turretUp);
+
+            turret.limitedTraverseAngle = ExtraTurretMathsFunctions.MoveTowards(turret.limitedTraverseAngle, targetTraverse, turret.TraverseSpeed * deltaTime);
+
+            float3 localTargetPos = math.mul(math.inverse(HorizontalLocalToWorld.Rotation), targetPosition - VerticalPos);
+            float3 flattenedVecForVertical = ExtraTurretMathsFunctions.ProjectOnPlane(localTargetPos, ExtraTurretMathsFunctions.Up);
+            float targetElevation = ExtraTurretMathsFunctions.Angle(flattenedVecForVertical, localTargetPos);
+            targetElevation *= math.sign(localTargetPos.y);
+            targetElevation = math.clamp(targetElevation, -turret.MaxDepression, turret.MaxElevation);
+            turret.elevation = ExtraTurretMathsFunctions.MoveTowardsABS(turret.elevation, targetElevation, turret.ElevationSpeed * deltaTime);
+
+            if (math.abs(turret.elevation) > math.EPSILON)
+            {
+                turret.VerticalAxis = ExtraTurretMathsFunctions.Right * -turret.elevation;
+                ecb.SetComponent(batchIndex, turret.VerticalEntity, new Rotation { Value = quaternion.EulerXYZ(math.radians(turret.VerticalAxis)) });
+            }
+
+            if (math.abs(turret.limitedTraverseAngle) > math.EPSILON)
+            {
+                turret.HorizontalAxis = ExtraTurretMathsFunctions.Up * turret.limitedTraverseAngle;
+                ecb.SetComponent(batchIndex, turret.HorizontalEntity, new Rotation { Value = quaternion.EulerXYZ(math.radians(turret.HorizontalAxis)) });
+            }
+
+            turret.angleToTarget = ExtraTurretMathsFunctions.Angle(targetPosition - VerticalPos, VerticalLocalToWorld.Forward);
+            if (turret.angleToTarget < turret.aimedThreshold)
+            {
+                ecb.AddComponent<TurretIsAimed>(batchIndex, turret.Self);
+            }
+
+            ecb.SetComponent(batchIndex, turret.HorizontalEntity, HorizontalLocalToWorld);
+            ecb.SetComponent(batchIndex, turret.Self, turret);
         }
     }
 }
