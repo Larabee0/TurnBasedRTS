@@ -152,10 +152,8 @@ namespace DOTSHexagonsV2
 					chunksToUpdate.Clear();
 					entityManager.AddComponent<RefreshChunk>(chunksToUpdateArray);
 					Debug.Log("Refreshing " + chunksToUpdateArray.Length + " Chunks");
-					chunksToUpdateArray.Dispose();
 				}
 
-				chunks.Dispose();
 				return;
 			}
             if (Input.GetKeyUp(KeyCode.R))
@@ -195,11 +193,6 @@ namespace DOTSHexagonsV2
 
 		private void OnDestroy()
 		{
-			try
-			{
-				chunks.Dispose();
-			}
-			catch { }
 			try
 			{
 				chunksToUpdate.Dispose();

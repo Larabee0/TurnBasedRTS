@@ -54,7 +54,6 @@ namespace DOTSHexagonsV2 {
                     }
 
                 }
-                chunks.Dispose();
             }
         }
 

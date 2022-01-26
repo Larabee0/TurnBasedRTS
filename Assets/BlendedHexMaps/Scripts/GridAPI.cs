@@ -191,7 +191,6 @@ namespace DOTSHexagonsV2
             });
             NativeArray<HexHash> hasGrid = HexFunctions.InitializeHashGrid(seed);
             entityManager.GetBuffer<HexHash>(grid).CopyFrom(hasGrid);
-            hasGrid.Dispose();
             return true;
         }
 
@@ -648,7 +647,6 @@ namespace DOTSHexagonsV2
                     ecbEnd.RemoveComponent<RepaintNow>(entities[i].Index, entities[i]);
                     ecbEnd.RemoveComponent<RepaintScheduled>(entities[i].Index, entities[i]);
                     ecbEnd.RemoveComponent<HexMeshIndex>(entities[i].Index, entities[i]);
-                    VertexDescriptors.Dispose();
                 }
             }
         }

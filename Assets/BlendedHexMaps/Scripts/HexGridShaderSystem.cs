@@ -129,7 +129,6 @@ namespace DOTSHexagonsV2
             Shader.SetGlobalVector("Vector4_60bbbf410de0422c812ba0764d35ecf5", new Vector4(1f / x, 1f / z, x, z));
             if (cellTextureData.Length != x * z)
             {
-                cellTextureData.Dispose();
                 cellTextureData = new NativeArray<HexCellTextureDataBuffer>(x * z, Allocator.Temp);
             }
             else
@@ -144,7 +143,6 @@ namespace DOTSHexagonsV2
             ecbEnd.RemoveComponent<InitialiseHexCellShader>(HexCellShaderData);
 
             ecbBegin.SetBuffer<HexCellTextureDataBuffer>(HexCellShaderData).CopyFrom(cellTextureData);
-            cellTextureData.Dispose();
             ScheduleRefreshAll(ecbBegin);
             ecbBegin.AddComponent<SetFeatureVisability>(HexCellShaderData);
             ViewElevationChanged(ecbBegin);
@@ -246,7 +244,6 @@ namespace DOTSHexagonsV2
                     {
                         transitioningCellsBufferAccessor[i].CopyFrom(transitioningCells);
                     }
-                    transitioningCells.Dispose();
                     ecbEnd.RemoveComponent<HexCellShaderRefreshAll>(batchIndex, entities[i]);
                 }
             }
@@ -320,7 +317,6 @@ namespace DOTSHexagonsV2
                     {
                         ecbEnd.RemoveComponent<HexCellShaderRunUpdateLoop>(batchIndex, entities[i]);
                     }
-                    transitioningCells.Dispose();
                 }
             }
         }

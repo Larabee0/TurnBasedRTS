@@ -14,7 +14,6 @@ namespace DOTSHexagonsV2 {
             return inputDeps;
         }
 
-
         private struct GetPath : IJobEntityBatch
         {
             public EntityTypeHandle entityTypeHandle;
@@ -81,13 +80,11 @@ namespace DOTSHexagonsV2 {
                             current = searchFrontier.elements[current.PathFrom];
                         }
                         pathToTravelAccessors[i].CopyFrom(path.AsArray());
-                        path.Dispose();
                     }
                     else
                     {
                         pathToTravelAccessors[i].Clear();
                     }
-                    searchFrontier.Dispose();
                 }
             }
 

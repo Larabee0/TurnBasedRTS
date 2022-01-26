@@ -40,7 +40,6 @@ namespace DOTSHexagonsV2
                         }
                         EntityManager.SetComponentData(columns[i].Value, new ColumnOffset { Value = position });
                     }
-                    columns.Dispose();
                 }
                 EntityManager.RemoveComponent<CentreMap>(gridEntity);
             });

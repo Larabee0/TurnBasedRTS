@@ -106,16 +106,7 @@ namespace DOTSHexagonsV2
 				ecbBegin.SetBuffer<HexGridVertex>(batchIndex, chunkComp.entityWalls).CopyFrom(wallMesh.vertices.AsArray().Reinterpret<HexGridVertex>());
 				ecbBegin.SetBuffer<HexGridTriangles>(batchIndex, chunkComp.entityWalls).CopyFrom(wallMesh.triangles.AsArray().Reinterpret<HexGridTriangles>());
 				ecbBegin.AddComponent<RepaintScheduled>(batchIndex, chunkComp.entityWalls);
-
-				terrianMesh.Dispose();
-				riverMesh.Dispose();
-				waterMesh.Dispose();
-				waterShoreMesh.Dispose();
-				estuaryMesh.Dispose();
-				roadMesh.Dispose();
-				wallMesh.Dispose();
 				ecbBegin.SetBuffer<PossibleFeaturePosition>(batchIndex, chunkComp.FeatureContainer).CopyFrom(features);
-				features.Dispose();
 				ecbBegin.AddComponent<RefreshCellFeatures>(batchIndex, chunkComp.FeatureContainer);
 				ecbEnd.RemoveComponent<RefreshChunk>(batchIndex, chunkEntities[i]);
 			}

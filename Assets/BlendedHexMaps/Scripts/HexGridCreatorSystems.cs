@@ -145,9 +145,8 @@ namespace DOTSHexagonsV2
                         }
                     }
                     ecbBegin.SetBuffer<HexGridChunkBuffer>(batchIndex ^ index, comp.gridEntity).CopyFrom(HexGridChunkEntities);
-                    HexGridChunkEntities.Dispose();
-                    ecbEnd.RemoveComponent<GridWithColumns>(batchIndex ^ index, comp.gridEntity);
                     ecbBegin.AddComponent<GridWithChunks>(batchIndex ^ index, comp.gridEntity);
+                    ecbEnd.RemoveComponent<GridWithColumns>(batchIndex ^ index, comp.gridEntity);
                 }
             }
             private Entity GetColumn(DynamicBuffer<HexGridChild> columns, int x)
@@ -384,13 +383,9 @@ namespace DOTSHexagonsV2
                         }
                         ecbBegin.AddComponent<HexGridDataInitialised>(batchIndex ^ i, gridChunkBuffer[i].ChunkEntity);
                         ecbBegin.SetBuffer<HexGridCellBuffer>(batchIndex ^ i, gridChunkBuffer[i].ChunkEntity).CopyFrom(buffer);
-                        buffer.Dispose();
-                        list.Dispose();
                     }
                     ecbBegin.SetBuffer<HexCell>(batchIndex ^ index, comp.gridEntity).CopyFrom(cells);
-                    cells.Dispose();
                     ecbBegin.SetBuffer<HexGridChunkBuffer>(batchIndex ^ index, comp.gridEntity).CopyFrom(gridChunkBuffer);
-                    gridChunkBuffer.Dispose();
                     ecbEnd.RemoveComponent<GridWithChunks>(batchIndex ^ index, comp.gridEntity);
                     ecbBegin.AddComponent<HexGridDataInitialised>(batchIndex ^ index, comp.gridEntity);
                 }
@@ -479,30 +474,16 @@ namespace DOTSHexagonsV2
                     ecbBegin.SetComponent(batchIndex, comp.entityWalls, new HexRenderer { ChunkIndex = comp.chunkIndex, rendererID = RendererID.Walls });
                     ecbBegin.SetComponent(batchIndex, comp.FeatureContainer, new FeatureContainer { GridEntity = comp.gridEntity, ChunkEntity = ChunkEntities[index] });
 
-                    //DynamicBuffer<HexGridCellBuffer> cellBuffer = cellBufferAccessors[index];
-                    //NativeArray<CellContainer> cellFeatures = new NativeArray<CellContainer>(cellBuffer.Length, Allocator.Temp);
-                    //for (int i = 9, cellBufferIndex = 0; i < linkedEntities.Length; i++, cellBufferIndex++)
-                    //{
-                    //    cellFeatures[cellBufferIndex] = new CellContainer { cellIndex = cellBuffer[cellBufferIndex].cellIndex, container = linkedEntities[i].Value };
-                    //    FeatureGridEntities featureData = new FeatureGridEntities
-                    //    {
-                    //        containerEntity = linkedEntities[1].Value,
-                    //        cellIndex = cellBuffer[cellBufferIndex].cellIndex,
-                    //        GridEntity = comp.gridEntity
-                    //    };
-                    //    ecbBegin.SetComponent(batchIndex, linkedEntities[i].Value, featureData);
-                    //}
-                    //ecbEnd.AddBuffer<CellContainer>(batchIndex, comp.FeatureContainer).CopyFrom(cellFeatures);
-                    //cellFeatures.Dispose();
-                    ecbEnd.RemoveComponent<HexGridDataInitialised>(batchIndex, linkedEntities[0].Value);
-                    ecbEnd.RemoveComponent<HexGridChunkInitialisationComponent>(batchIndex, linkedEntities[0].Value);
                     if (!gridMarkForGeneration.HasComponent(comp.gridEntity))
                     {
                         ecbBegin.AddComponent<RefreshChunk>(batchIndex, linkedEntities[0].Value);
                     }
                     ecbBegin.SetComponent(batchIndex, linkedEntities[0].Value, comp);
-                    ecbEnd.RemoveComponent<HexGridDataInitialised>(batchIndex, comp.gridEntity);
                     ecbBegin.AddComponent<HexGridVisualsInitialised>(batchIndex, comp.gridEntity);
+
+                    ecbEnd.RemoveComponent<HexGridDataInitialised>(batchIndex, linkedEntities[0].Value);
+                    ecbEnd.RemoveComponent<HexGridChunkInitialisationComponent>(batchIndex, linkedEntities[0].Value);
+                    ecbEnd.RemoveComponent<HexGridDataInitialised>(batchIndex, comp.gridEntity);
                 }
             }
         }
@@ -541,7 +522,6 @@ namespace DOTSHexagonsV2
             }
             
             Debug.Log("Currently " + DOTSHexEditorV3.GridEntities.Count + " grids.");
-            grids.Dispose();
     
             return inputDeps;
         }

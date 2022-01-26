@@ -255,9 +255,7 @@ namespace DOTSHexagonsV2
                     HexCellPriorityQueue searchFrontier = new HexCellPriorityQueue(searchCells);
                     int landCells;
                     (landCells, randomNumberGenerator) = CreateLand(cells, regions, grid, settings, randomNumberGenerator, searchFrontier);
-                    searchFrontier.Dispose();
-                    regions.Dispose();
-
+                    
                     NativeList<int> erodibleCells = new NativeList<int>(cells.Length / 2, Allocator.Temp);
                     for (int cellIndex = 0; cellIndex < erodibleCells.Length; cellIndex++)
                     {
@@ -278,9 +276,7 @@ namespace DOTSHexagonsV2
                     randomNumberGenerator = CreateRivers(cells, climate, randomNumberGenerator, settings, landCells);
 
                     SetTerrianType(cells, climate, grid, settings, randomNumberGenerator);
-                    climate.Dispose();
                     hexCellBufferAccessors[i].CopyFrom(cells);
-                    cells.Dispose();
                     DynamicBuffer<HexGridChunkBuffer> chunkBuffer = hexGridChunkBufferAccessors[i];
                     for (int chunkIndex = 0; chunkIndex < chunkBuffer.Length; chunkIndex++)
                     {
@@ -628,7 +624,6 @@ namespace DOTSHexagonsV2
                         }
                     }
                 }
-                candidates.Dispose();
                 return randomNumber;
             }
 
@@ -744,14 +739,9 @@ namespace DOTSHexagonsV2
                         climate[i] = new ClimateData();
                     }
                     NativeArray<ClimateData> swap = new NativeArray<ClimateData>(climate, Allocator.Temp);
-                    climate.Dispose();
                     climate = new NativeArray<ClimateData>(nextClimate, Allocator.Temp);
-                    nextClimate.Dispose();
                     nextClimate = new NativeArray<ClimateData>(swap, Allocator.Temp);
-                    swap.Dispose();
                 }
-
-                nextClimate.Dispose();
                 return climate;
             }
             #region CreateRivers
@@ -841,7 +831,6 @@ namespace DOTSHexagonsV2
                         }
                     }
                 }
-                flowDirections.Dispose();
                 riverOrigins[0] = riverBudget;
 
                 return randomNumber;

@@ -581,7 +581,7 @@ public class TurretToTargetSystem : JobComponentSystem
     }
 }
 
-[UpdateAfter(typeof(TurretIsAimedSystem))]
+[UpdateAfter(typeof(TransformSystemGroup))]
 public class TurretToTargetSystemV2 : JobComponentSystem
 {
     private EndSimulationEntityCommandBufferSystem endSimulationCommandBuffer;
@@ -773,16 +773,11 @@ public static class ExtraTurretMathsFunctions
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static float3 ProjectOnPlane(float3 vector, float3 planeNormal)
     {
-        float sqrMag = math.dot(planeNormal, planeNormal);
-        if (sqrMag < math.EPSILON)
+        float num = math.dot(planeNormal, planeNormal);
+        if (num < math.EPSILON)
             return vector;
-        else
-        {
-            var dot = math.dot(vector, planeNormal);
-            return new float3(vector.x - planeNormal.x * dot / sqrMag,
-                vector.y - planeNormal.y * dot / sqrMag,
-                vector.z - planeNormal.z * dot / sqrMag);
-        }
+        float num2 = math.dot(vector, planeNormal);
+        return new float3(vector.x - planeNormal.x * num2 / num, vector.y - planeNormal.y * num2 / num, vector.z - planeNormal.z * num2 / num);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -796,7 +791,11 @@ public static class ExtraTurretMathsFunctions
     public static quaternion RotateTowards(quaternion from, quaternion to, float maxRadiansDelta)
     {
         float num = Angle(from, to);
-        return num < float.Epsilon ? to : math.slerp(from, to, math.min(1f, maxRadiansDelta / num));
+        if(num == 0f)
+        {
+            return to;
+        }
+        return Quaternion.SlerpUnclamped(from, to, math.min(1f, maxRadiansDelta / num));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -805,7 +804,7 @@ public static class ExtraTurretMathsFunctions
         if (math.abs(target - current) <= maxDelta)
             return target;
         //return current + math.sign(target - current) * maxDelta;
-        return (current > target) ? current + math.sign(target - current) * maxDelta : current - math.sign(target - current) * maxDelta;
+        return (current > target) ? current + math.sign(target + current) * maxDelta : current + math.sign(target - current) * maxDelta;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -813,7 +812,7 @@ public static class ExtraTurretMathsFunctions
     {
         if (math.abs(target - current) <= maxDelta)
             return target;
-        return current + math.sign(target - current) * maxDelta;
+        return current + Mathf.Sign(target - current) * maxDelta;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -843,22 +842,22 @@ public static class ExtraTurretMathsFunctions
     {
         // sqrt(a) * sqrt(b) = sqrt(a * b) -- valid for real numbers
         float denominator = math.sqrt(SqrMagnitude(from) * SqrMagnitude(to));
-        if (denominator < kEpsilon)
+        if (denominator < 1E-15f)
             return 0F;
         
         float dot = math.clamp(math.dot(from, to) / denominator, -1F, 1F);
-        return (math.acos(dot)) * Rad2Deg;
+        return math.acos(dot) * 57.29578f;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static float SignedAngle(float3 from, float3 to, float3 axis)
     {
-        float unsignedAngle = Angle(from, to);
-        float cross_x = from.y * to.z - from.z * to.y;
-        float cross_y = from.z * to.x - from.x * to.z;
-        float cross_z = from.x * to.y - from.y * to.x;
-        float sign = math.sign(axis.x * cross_x + axis.y * cross_y + axis.z * cross_z);
-        return unsignedAngle * sign;
+        float num = Angle(from, to);
+        float num2 = from.y * to.z - from.z * to.y;
+        float num3 = from.z * to.x - from.x * to.z;
+        float num4 = from.x * to.y - from.y * to.x;
+        float num5 = math.sign(axis.x * num2 + axis.y * num3 + axis.z * num4);
+        return num * num5;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -967,27 +966,47 @@ public struct TurretToTargetJob : IJobEntityBatch
         NativeArray<LocalToWorld> turretLocalToWorldData = batchInChunk.GetNativeArray(localToWorldTypeHandle);
         for (int i = 0; i < turretInData.Length; i++)
         {
-            LocalToWorld turretLocalToWorld = turretLocalToWorldData[i];
             TurretMovementData turret = turretInData[i];
+            LocalToWorld turretLocalToWorld = turretLocalToWorldData[i];
             LocalToWorld HorizontalLocalToWorld = HorizontalSide[turret.HorizontalEntity];
             LocalToWorld VerticalLocalToWorld = VerticalSide[turret.VerticalEntity];
-            float3 targetPosition = targetMap[turretTargetData[i].Entity];
-            float3 basePos = HorizontalLocalToWorld.Position;
-            float3 VerticalPos = VerticalLocalToWorld.Position;
-            //float3 HorizontalFoward = HorizontalLocalToWorld.Forward;
-            float3 turretUp = turretLocalToWorld.Up;
-            float3 turretForward = turretLocalToWorld.Forward;
 
+            float3 targetPosition = targetMap[turretTargetData[i].Entity];
+
+            float3 turretUp = turretLocalToWorld.Up;
+            float3 basePos = HorizontalLocalToWorld.Position;
             float3 vecToTarget = targetPosition - basePos;
+
             float3 flattenedVecForBase = ExtraTurretMathsFunctions.ProjectOnPlane(vecToTarget, turretUp);
+            float3 turretForward = turretLocalToWorld.Forward;
             float targetTraverse = ExtraTurretMathsFunctions.SignedAngle(turretForward, flattenedVecForBase, turretUp);
 
-            turret.limitedTraverseAngle = ExtraTurretMathsFunctions.MoveTowards(turret.limitedTraverseAngle, targetTraverse, turret.TraverseSpeed * deltaTime);
+            if (turret.hasLimitedTraverse)
+            {
+                targetTraverse = Mathf.Clamp(targetTraverse, -turret.LeftLimit, turret.RightLimit);
+            }
 
+            float highForLower = targetTraverse + 360f;
+            if (math.abs(math.distance(turret.limitedTraverseAngle, highForLower)) < math.abs(math.distance(turret.limitedTraverseAngle, targetTraverse)))
+            {
+                targetTraverse = highForLower;
+            }
+
+            turret.limitedTraverseAngle = ExtraTurretMathsFunctions.MoveTowardsABS(turret.limitedTraverseAngle, targetTraverse, turret.TraverseSpeed * deltaTime);
+
+
+            if (math.abs(turret.limitedTraverseAngle) > math.EPSILON)
+            {
+                turret.HorizontalAxis = ExtraTurretMathsFunctions.Up * turret.limitedTraverseAngle;
+                ecb.SetComponent(batchIndex, turret.HorizontalEntity, new Rotation { Value = quaternion.EulerXYZ(math.radians(turret.HorizontalAxis)) });
+            }
+
+            float3 VerticalPos = VerticalLocalToWorld.Position;
             float3 localTargetPos = math.mul(math.inverse(HorizontalLocalToWorld.Rotation), targetPosition - VerticalPos);
             float3 flattenedVecForVertical = ExtraTurretMathsFunctions.ProjectOnPlane(localTargetPos, ExtraTurretMathsFunctions.Up);
             float targetElevation = ExtraTurretMathsFunctions.Angle(flattenedVecForVertical, localTargetPos);
             targetElevation *= math.sign(localTargetPos.y);
+
             targetElevation = math.clamp(targetElevation, -turret.MaxDepression, turret.MaxElevation);
             turret.elevation = ExtraTurretMathsFunctions.MoveTowardsABS(turret.elevation, targetElevation, turret.ElevationSpeed * deltaTime);
 
@@ -997,20 +1016,14 @@ public struct TurretToTargetJob : IJobEntityBatch
                 ecb.SetComponent(batchIndex, turret.VerticalEntity, new Rotation { Value = quaternion.EulerXYZ(math.radians(turret.VerticalAxis)) });
             }
 
-            if (math.abs(turret.limitedTraverseAngle) > math.EPSILON)
-            {
-                turret.HorizontalAxis = ExtraTurretMathsFunctions.Up * turret.limitedTraverseAngle;
-                ecb.SetComponent(batchIndex, turret.HorizontalEntity, new Rotation { Value = quaternion.EulerXYZ(math.radians(turret.HorizontalAxis)) });
-            }
-
             turret.angleToTarget = ExtraTurretMathsFunctions.Angle(targetPosition - VerticalPos, VerticalLocalToWorld.Forward);
             if (turret.angleToTarget < turret.aimedThreshold)
             {
                 ecb.AddComponent<TurretIsAimed>(batchIndex, turret.Self);
             }
-
-            ecb.SetComponent(batchIndex, turret.HorizontalEntity, HorizontalLocalToWorld);
             ecb.SetComponent(batchIndex, turret.Self, turret);
+
+            //ecb.SetComponent(batchIndex, turret.HorizontalEntity, HorizontalLocalToWorld);
         }
     }
 }
