@@ -12,3 +12,6 @@ This project contains serveral namespaces, hexagon map systems and other things.
 
 
 This project is currently using Unity 2020.3.26f1 LTS
+
+https://www.youtube.com/watch?v=End0qwu8xMI
+https://youtu.be/End0qwu8xMI
