@@ -15,6 +15,8 @@ namespace DOTSHexagonsV2
             }
         }
 
+        public static bool ForceWrapUpdate = false;
+
         public static void ValidatePosition()
         {
             if (GridAPI.ActiveGridEntity == Entity.Null)
@@ -82,7 +84,7 @@ namespace DOTSHexagonsV2
 
             float xDelta = Input.GetAxis("Horizontal");
             float zDelta = Input.GetAxis("Vertical");
-            if (xDelta != 0f || zDelta != 0f)
+            if (xDelta != 0f || zDelta != 0f|| ForceWrapUpdate)
             {
                 AdjustPosition(xDelta, zDelta);
             }

@@ -37,8 +37,8 @@ namespace DOTSHexagonsV2
                     makeActive = GetComponentDataFromEntity<MakeActiveGridEntity>(true),
                     currentActive = GetComponentDataFromEntity<ActiveGridEntity>(true),
                     gridCompTypes = GetComponentTypeHandle<HexGridComponent>(true),
-                    ecbBegin = ecbBeginSystem.CreateCommandBuffer(),
-                    ecbEnd = ecbEndSystem.CreateCommandBuffer()
+                    ecbBegin = ecbBeginSystem.CreateCommandBuffer().AsParallelWriter(),
+                    ecbEnd = ecbEndSystem.CreateCommandBuffer().AsParallelWriter()
                 };
 
                 outputDeps = gridActivation.Schedule(AllCreatedGridsQuery, inputDeps);
@@ -75,8 +75,8 @@ namespace DOTSHexagonsV2
             public ComponentTypeHandle<HexGridComponent> gridCompTypes;
 
 
-            public EntityCommandBuffer ecbEnd;
-            public EntityCommandBuffer ecbBegin;
+            public EntityCommandBuffer.ParallelWriter ecbEnd;
+            public EntityCommandBuffer.ParallelWriter ecbBegin;
 
             public void Execute(ArchetypeChunk batchInChunk, int batchIndex)
             {
@@ -86,14 +86,14 @@ namespace DOTSHexagonsV2
                     Entity grid = grids[i].gridEntity;
                     if (makeActive.HasComponent(grid))
                     {
-                        ecbEnd.RemoveComponent<MakeActiveGridEntity>(grid);
-                        ecbBegin.AddComponent<ActiveGridEntity>(grid);
-                        ecbBegin.AddComponent(shaderEntity, new InitialiseHexCellShader { grid = grid, x = grids[i].cellCountX, z = grids[i].cellCountZ });
+                        ecbEnd.RemoveComponent<MakeActiveGridEntity>(batchIndex, grid);
+                        ecbBegin.AddComponent<ActiveGridEntity>(batchIndex, grid);
+                        ecbBegin.AddComponent(batchIndex, shaderEntity, new InitialiseHexCellShader { grid = grid, x = grids[i].cellCountX, z = grids[i].cellCountZ });
                     }
 
                     if (currentActive.HasComponent(grid))
                     {
-                        ecbEnd.RemoveComponent<ActiveGridEntity>(grid);
+                        ecbEnd.RemoveComponent<ActiveGridEntity>(batchIndex, grid);
                     }
                 }
             }

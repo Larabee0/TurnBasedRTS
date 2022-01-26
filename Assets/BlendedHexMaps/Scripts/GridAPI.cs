@@ -517,7 +517,7 @@ namespace DOTSHexagonsV2
                     collider[i].enabled = true;
                 }
             }
-
+            HexMapCamera.ForceWrapUpdate = true;
             Debug.Log("Repaint Job Run, total time since start:" + (UnityEngine.Time.realtimeSinceStartup - startTime) * 1000f + "ms");
 
             return outputDeps;
@@ -772,6 +772,10 @@ namespace DOTSHexagonsV2
 
                         GridChunksDict[ChunkIndex].FeatureContainer.Features= new List<HexGridFeatureInfo>(featureWriteBacks);
 
+                        EntityManager.RemoveComponent<ProcessFeatures>(Container);
+                    }
+                    else
+                    {
                         EntityManager.RemoveComponent<ProcessFeatures>(Container);
                     }
                 });

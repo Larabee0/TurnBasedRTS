@@ -116,33 +116,35 @@ namespace DOTSHexagonsV2
 			}
 		}
 
-		private void CreateNewGrid()
+		public void CreateNewGrid()
 		{
-			if (Input.GetKeyUp(KeyCode.C))
+			for (int i = 0; i < 3; i++)
 			{
-				for (int i = 0; i < 1; i++)
-				{
-					//generator.GenerateMap(32, 24, true);
-					generator.GenerateMap(80, 60, true);
-				}
-				//if (GridEntities.Count == 0)
-				//{
-				//	for (int i = 0; i < 5; i++)
-				//	{
-				//		generator.GenerateMap(80, 60, true);
-				//	}
-				//}
-				//else
-				//{
-				//	generator.GenerateMap(80, 60, true);
-				//}
+				generator.GenerateMap(32, 24, true);
+				//generator.GenerateMap(40, 30, true);
+				//generator.GenerateMap(80, 60, true);
 			}
+			//if (GridEntities.Count == 0)
+			//{
+			//	for (int i = 0; i < 5; i++)
+			//	{
+			//		generator.GenerateMap(80, 60, true);
+			//	}
+			//}
+			//else
+			//{
+			//	generator.GenerateMap(80, 60, true);
+			//}
+
 		}
 
 		private void Update()
 		{
 			GridCycler();
-			CreateNewGrid();
+			if (Input.GetKeyUp(KeyCode.C))
+			{
+				CreateNewGrid();
+			}
 			if (Input.GetMouseButton(0) && !EventSystem.current.IsPointerOverGameObject())
 			{
 				HandleInput();
