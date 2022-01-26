@@ -7,7 +7,8 @@ This project contains serveral namespaces, hexagon map systems and other things.
 - DOTSHexagons contains a nearly total DOTS implementation of the game object system.
 - DOTSHExagonsV2 contains a blended gameobject DOTS implementation.
 - Hexagons contains a legacy system for hex based grids, it hasn't been touched since August 2021.
-- There is also code for turret targeting system in DOTS, including extra maths functions for this.
+~~- There is also code for turret targeting system in DOTS, including extra maths functions for this.~~
+- There is also DOTS turret targeting system and a more fully outlined general spaceship movement and combat system
 
 
-This project is currently using Unity 2020.3.25f1 LTS
+This project is currently using Unity 2020.3.26f1 LTS
