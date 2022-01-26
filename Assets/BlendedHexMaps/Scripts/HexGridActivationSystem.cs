@@ -29,6 +29,7 @@ namespace DOTSHexagonsV2
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
             JobHandle outputDeps;
+            // If we need to make a new grid the active grid, do only this operation, repaint next time.
             if (!MakeActiveQuery.IsEmpty)
             {
                 GridActivation gridActivation = new GridActivation
@@ -41,11 +42,11 @@ namespace DOTSHexagonsV2
                     ecbEnd = ecbEndSystem.CreateCommandBuffer().AsParallelWriter()
                 };
 
-                outputDeps = gridActivation.Schedule(AllCreatedGridsQuery, inputDeps);
+                outputDeps = gridActivation.ScheduleParallel(AllCreatedGridsQuery, 64, inputDeps);
                 ecbBeginSystem.AddJobHandleForProducer(outputDeps);
                 ecbEndSystem.AddJobHandleForProducer(outputDeps);
             }
-            else
+            else // don't repaint until the grid has become active.
             {
                 RepaintChunkRenderers repaintChunksJob = new RepaintChunkRenderers
                 {
@@ -78,6 +79,12 @@ namespace DOTSHexagonsV2
             public EntityCommandBuffer.ParallelWriter ecbEnd;
             public EntityCommandBuffer.ParallelWriter ecbBegin;
 
+            // For each grid go through see if it has the "MakeActiveGridEntity" component:
+            // If yes then we add the "ActiveGridEntity" tagging component, and remove the "MakeActiveGridEntity" from it, then schedule the shader to reinitialise.
+
+            // Next check to see if this grid entity is the currently active grid, which it will be if it has the "ActiveGridEntity" tagging component.
+            // If it does, then remove it, that grid is no longer active.
+            // We can do this safely because the command buffers won't execute the changes until after the job has fully completed.
             public void Execute(ArchetypeChunk batchInChunk, int batchIndex)
             {
                 NativeArray<HexGridComponent> grids = batchInChunk.GetNativeArray(gridCompTypes);
@@ -110,6 +117,14 @@ namespace DOTSHexagonsV2
 
             public EntityCommandBuffer.ParallelWriter ecbEnd;
             public EntityCommandBuffer.ParallelWriter ecbBegin;
+
+            // For each Grid Chunk, from the currently active grid:
+            // Add the RepaintScheduled tag component, to each "HexRenderer" entity.
+            // Additionally, schedule the features to be reprocessed, and remove the RepaintSchedule tag from the Grid Chunk Entity.
+
+            // the entity query system looks for grid chunks with "RepaintSchedule" comps, to run this system on, the GridAPIMeshSystem
+            // looks for "HexRenderer"'s with "RepaintSchedule" comps, then creates a mesh class based off the data in each "HexRenderer" Entity
+            // and applies it to some GameObject determined by the GridAPI system group.
             public void Execute(ArchetypeChunk batchInChunk, int batchIndex)
             {
                 NativeArray<Entity> chunks = batchInChunk.GetNativeArray(entityTypeHandle);
