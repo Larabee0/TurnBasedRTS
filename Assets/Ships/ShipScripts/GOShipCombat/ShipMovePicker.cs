@@ -199,9 +199,4 @@ public class ShipMovePicker : MonoBehaviour
         }
         
     }
-
-    private void OnDrawGizmos()
-    {
-        //Gizmos.DrawSphere(mousePosition, 0.5f);
-    }
 }
