@@ -19,6 +19,7 @@ namespace DOTSHexagonsV2
 		public static implicit operator HexGridVertex(Vector3 v) { return new HexGridVertex { Value = v }; }
 		public float3 Value;
 	}
+
 	public struct HexGridTriangles : IBufferElementData
 	{
 		public static implicit operator uint(HexGridTriangles v) { return v.Value; }
@@ -34,6 +35,7 @@ namespace DOTSHexagonsV2
 		public static implicit operator HexGridIndices(Vector3 v) { return new HexGridIndices { Value = v }; }
 		public float3 Value;
 	}
+
 	public struct HexGridWeights : IBufferElementData
 	{
 		public static implicit operator float4(HexGridWeights v) { return v.Value; }
@@ -42,7 +44,6 @@ namespace DOTSHexagonsV2
 		public static implicit operator HexGridWeights(Vector4 v) { return new HexGridWeights { Value = v }; }
 		public static implicit operator Color(HexGridWeights v) { return (Vector4)v.Value; }
 		public static implicit operator HexGridWeights(Color v) { return new HexGridWeights { Value = (Vector4)v }; }
-
 
 		public float4 Value;
 	}
@@ -55,6 +56,7 @@ namespace DOTSHexagonsV2
 		public static implicit operator HexGridUV2(Vector2 v) { return new HexGridUV2 { Value = v }; }
 		public float2 Value;
 	}
+
 	public struct HexGridUV4 : IBufferElementData
 	{
 		public static implicit operator float4(HexGridUV4 v) { return v.Value; }

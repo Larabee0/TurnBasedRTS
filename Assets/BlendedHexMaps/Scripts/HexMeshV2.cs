@@ -1305,36 +1305,36 @@ namespace DOTSHexagonsV2
 				{
 					if (!cell3.Walled)
 					{
-						AddWallSegment(wallMesh, features, hexGridCell, c3, cell3, c1, cell1, c2, cell2, towerIndex);
+						AddWallSegment(wallMesh, features, hexGridCell, c3, cell3, c1, cell1, c2, cell2);
 					}
 				}
 				else if (cell3.Walled)
 				{
-					AddWallSegment(wallMesh, features, hexGridCell, c2, cell2, c3, cell3, c1, cell1, towerIndex);
+					AddWallSegment(wallMesh, features, hexGridCell, c2, cell2, c3, cell3, c1, cell1);
 				}
 				else
 				{
-					AddWallSegment(wallMesh, features, hexGridCell, c1, cell1, c2, cell2, c3, cell3, towerIndex);
+					AddWallSegment(wallMesh, features, hexGridCell, c1, cell1, c2, cell2, c3, cell3);
 				}
 			}
 			else if (cell2.Walled)
 			{
 				if (cell3.Walled)
 				{
-					AddWallSegment(wallMesh, features, hexGridCell, c1, cell1, c2, cell2, c3, cell3, towerIndex);
+					AddWallSegment(wallMesh, features, hexGridCell, c1, cell1, c2, cell2, c3, cell3);
 				}
 				else
 				{
-					AddWall(wallMesh, features, hexGridCell, c2, cell2, c3, cell3, c1, cell1, towerIndex);
+					AddWall(wallMesh, features, hexGridCell, c2, cell2, c3, cell3, c1, cell1);
 				}
 			}
 			else if (cell3.Walled)
 			{
-				AddWallSegment(wallMesh, features, hexGridCell, c3, cell3, c1, cell1, c2, cell2, towerIndex);
+				AddWallSegment(wallMesh, features, hexGridCell, c3, cell3, c1, cell1, c2, cell2);
 			}
 		}
 
-		private void AddWallSegment(MeshBasic wallMesh, NativeList<PossibleFeaturePosition> features, int hexGridCell, float3 pivot, HexCell pivotCell, float3 left, HexCell leftCell, float3 right, HexCell rightCell, int towerIndex = 0)
+		private void AddWallSegment(MeshBasic wallMesh, NativeList<PossibleFeaturePosition> features, int hexGridCell, float3 pivot, HexCell pivotCell, float3 left, HexCell leftCell, float3 right, HexCell rightCell)
 		{
 			if (pivotCell.IsUnderwater)
 			{
