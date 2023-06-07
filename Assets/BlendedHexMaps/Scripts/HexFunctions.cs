@@ -507,9 +507,9 @@ namespace DOTSHexagonsV2
 		private int minimum;
 		public int searchPhase;
 		private Allocator allocatedWith;
-		public Allocator AllocatedWith { get { return allocatedWith; } }
+        public Allocator AllocatedWith => allocatedWith;
 
-		public HexCellPriorityQueue(NativeArray<HexCellQueueElement> cellsIn, Allocator allocator = Allocator.Temp)
+        public HexCellPriorityQueue(NativeArray<HexCellQueueElement> cellsIn, Allocator allocator = Allocator.Temp)
 		{
 			elements = cellsIn;
 			list = new NativeList<int>(cellsIn.Length, allocator);
