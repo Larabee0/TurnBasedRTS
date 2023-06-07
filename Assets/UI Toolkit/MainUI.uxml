@@ -1,0 +1,86 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI Toolkit/MainStyleSheet.uss?fileID=7433441132597879392&amp;guid=cc220462b4caec241a4492003c5b2b91&amp;type=3#MainStyleSheet" />
+    <ui:VisualElement picking-mode="Ignore" style="flex-direction: row; justify-content: space-between;">
+        <ui:VisualElement name="Left" style="align-items: stretch; justify-content: flex-start; background-color: rgb(47, 49, 54); border-top-left-radius: 3px; border-bottom-left-radius: 3px; border-top-right-radius: 3px; border-bottom-right-radius: 3px; padding-left: 3px; padding-right: 3px; padding-top: 3px; padding-bottom: 3px;">
+            <ui:VisualElement name="TerrainContainer" style="background-color: rgb(54, 57, 63); padding-left: 3px; padding-right: 3px; padding-top: 3px; padding-bottom: 3px; border-top-left-radius: 3px; border-bottom-left-radius: 3px; border-top-right-radius: 3px; border-bottom-right-radius: 3px;">
+                <ui:RadioButtonGroup label="Terrain" value="5" choices="Sand,Grass,Mud,Stone,Snow,None" name="TerrainGroup" style="flex-direction: column;" />
+            </ui:VisualElement>
+            <ui:VisualElement name="ElevationContainer" style="padding-left: 3px; padding-right: 3px; padding-top: 3px; padding-bottom: 3px; align-items: stretch; margin-left: 2px;">
+                <ui:VisualElement style="flex-direction: row;">
+                    <ui:Toggle name="ElevationToggle" style="flex-direction: row-reverse; margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 0; padding-left: 0; flex-shrink: 1; max-width: 125px;" />
+                    <ui:Label text="Elevation Level" display-tooltip-when-elided="true" style="padding-left: 3px;" />
+                </ui:VisualElement>
+                <ui:SliderInt picking-mode="Ignore" value="0" high-value="6" name="ElevationSlider" style="margin-left: 2px; margin-right: 0; margin-top: 0; margin-bottom: 0;" />
+            </ui:VisualElement>
+            <ui:VisualElement name="WaterContainer" style="padding-left: 3px; padding-right: 3px; padding-top: 3px; padding-bottom: 3px; align-items: stretch; margin-left: 2px;">
+                <ui:VisualElement style="flex-direction: row;">
+                    <ui:Toggle name="WaterLevelToggle" style="flex-direction: row-reverse; margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 0; padding-left: 0; flex-shrink: 1; max-width: 125px;" />
+                    <ui:Label text="Water Level" display-tooltip-when-elided="true" style="padding-left: 3px;" />
+                </ui:VisualElement>
+                <ui:SliderInt picking-mode="Ignore" value="0" high-value="6" name="WaterSlider" style="margin-left: 2px; margin-right: 0; margin-top: 0; margin-bottom: 0;" />
+            </ui:VisualElement>
+            <ui:VisualElement name="BrushSizeContainer" style="padding-left: 3px; padding-right: 3px; padding-top: 3px; padding-bottom: 3px; align-items: stretch; margin-left: 2px;">
+                <ui:VisualElement style="flex-direction: row;">
+                    <ui:Toggle name="BrushSizeToggle" style="flex-direction: row-reverse; margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 0; padding-left: 0; flex-shrink: 1; max-width: 125px;" />
+                    <ui:Label text="Brush Size" display-tooltip-when-elided="true" style="padding-left: 3px;" />
+                </ui:VisualElement>
+                <ui:SliderInt picking-mode="Ignore" value="0" high-value="4" name="BrushSizeSlider" style="margin-left: 2px; margin-right: 0; margin-top: 0; margin-bottom: 0;" />
+            </ui:VisualElement>
+            <ui:VisualElement name="RiverContainer" style="background-color: rgb(54, 57, 63); padding-left: 3px; padding-right: 3px; padding-top: 3px; padding-bottom: 3px; border-top-left-radius: 3px; border-bottom-left-radius: 3px; border-top-right-radius: 3px; border-bottom-right-radius: 3px;">
+                <ui:RadioButtonGroup label="River" value="0" choices="---,Add,Remove" name="RiverGroup" style="flex-direction: column;" />
+            </ui:VisualElement>
+            <ui:VisualElement name="RoadContainer" style="background-color: rgb(54, 57, 63); padding-left: 3px; padding-right: 3px; padding-top: 3px; padding-bottom: 3px; border-top-left-radius: 3px; border-bottom-left-radius: 3px; border-top-right-radius: 3px; border-bottom-right-radius: 3px; margin-top: 3px;">
+                <ui:RadioButtonGroup label="Road" value="0" choices="---,Add,Remove" name="RoadGroup" style="flex-direction: column;" />
+            </ui:VisualElement>
+            <ui:VisualElement name="WalledContainer" style="background-color: rgb(54, 57, 63); padding-left: 3px; padding-right: 3px; padding-top: 3px; padding-bottom: 3px; border-top-left-radius: 3px; border-bottom-left-radius: 3px; border-top-right-radius: 3px; border-bottom-right-radius: 3px; margin-top: 3px;">
+                <ui:RadioButtonGroup label="Walled" value="0" choices="---,Add,Remove" name="WalledGroup" style="flex-direction: column;" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="Right" style="align-items: stretch; justify-content: flex-start; background-color: rgb(47, 49, 54); border-top-left-radius: 3px; border-bottom-left-radius: 3px; border-top-right-radius: 3px; border-bottom-right-radius: 3px; padding-left: 3px; padding-right: 3px; padding-top: 3px; padding-bottom: 3px;">
+            <ui:VisualElement name="ButtonGroup" style="min-width: auto; min-height: auto;">
+                <ui:Button text="New Maps" display-tooltip-when-elided="true" name="NewMapsButton" style="padding-left: 3px; padding-right: 3px; padding-top: 5px; padding-bottom: 5px;" />
+                <ui:VisualElement style="flex-direction: row; justify-content: space-between;">
+                    <ui:Button text="Save" display-tooltip-when-elided="true" name="SaveButton" style="padding-right: 3px; padding-left: 3px; margin-right: 3px; width: 60px; padding-bottom: 5px; padding-top: 5px;" />
+                    <ui:Button text="Load" display-tooltip-when-elided="true" name="LoadButton" style="padding-right: 3px; padding-left: 3px; width: 60px; padding-bottom: 5px; padding-top: 5px;" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement name="GridContainer" style="flex-direction: row; padding-left: 3px; padding-right: 3px; padding-top: 3px; padding-bottom: 3px; margin-left: 2px;">
+                <ui:Toggle name="GridToggle" style="flex-direction: row-reverse; margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 0; padding-left: 0; flex-shrink: 1; max-width: 125px;" />
+                <ui:Label text="Grid" display-tooltip-when-elided="true" style="padding-left: 3px;" />
+            </ui:VisualElement>
+            <ui:VisualElement name="EditContainer" style="flex-direction: row; padding-left: 3px; padding-right: 3px; padding-top: 3px; padding-bottom: 3px; margin-left: 2px;">
+                <ui:Toggle name="EditToggle" style="flex-direction: row-reverse; margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 0; padding-left: 0; flex-shrink: 1; max-width: 125px;" />
+                <ui:Label text="Edit" display-tooltip-when-elided="true" style="padding-left: 3px;" />
+            </ui:VisualElement>
+            <ui:VisualElement style="background-color: rgb(54, 57, 63); height: 2px;" />
+            <ui:VisualElement name="UrbanContainer" style="padding-left: 3px; padding-right: 3px; padding-top: 3px; padding-bottom: 3px; align-items: stretch; margin-left: 2px;">
+                <ui:VisualElement style="flex-direction: row;">
+                    <ui:Toggle name="UrbanToggle" style="flex-direction: row-reverse; margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 0; padding-left: 0; flex-shrink: 1; max-width: 125px;" />
+                    <ui:Label text="Urban Level" display-tooltip-when-elided="true" style="padding-left: 3px;" />
+                </ui:VisualElement>
+                <ui:SliderInt picking-mode="Ignore" value="0" high-value="3" name="UrbanSlider" style="margin-left: 2px; margin-right: 0; margin-top: 0; margin-bottom: 0;" />
+            </ui:VisualElement>
+            <ui:VisualElement name="FarmContainer" style="padding-left: 3px; padding-right: 3px; padding-top: 3px; padding-bottom: 3px; align-items: stretch; margin-left: 2px;">
+                <ui:VisualElement style="flex-direction: row;">
+                    <ui:Toggle name="FarmToggle" style="flex-direction: row-reverse; margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 0; padding-left: 0; flex-shrink: 1; max-width: 125px;" />
+                    <ui:Label text="Farm Level" display-tooltip-when-elided="true" enable-rich-text="true" style="padding-left: 3px;" />
+                </ui:VisualElement>
+                <ui:SliderInt picking-mode="Ignore" value="0" high-value="3" name="FarmSlider" style="margin-left: 2px; margin-right: 0; margin-top: 0; margin-bottom: 0;" />
+            </ui:VisualElement>
+            <ui:VisualElement name="PlantContainer" style="padding-left: 3px; padding-right: 3px; padding-top: 3px; padding-bottom: 3px; align-items: stretch; margin-left: 2px;">
+                <ui:VisualElement style="flex-direction: row;">
+                    <ui:Toggle name="PlantToggle" style="flex-direction: row-reverse; margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 0; padding-left: 0; flex-shrink: 1; max-width: 125px;" />
+                    <ui:Label text="Plant Level" display-tooltip-when-elided="true" style="padding-left: 3px;" />
+                </ui:VisualElement>
+                <ui:SliderInt picking-mode="Ignore" value="0" high-value="3" name="PlantSlider" style="margin-left: 2px; margin-right: 0; margin-top: 0; margin-bottom: 0;" />
+            </ui:VisualElement>
+            <ui:VisualElement name="SpecialContainer" style="padding-left: 3px; padding-right: 3px; padding-top: 3px; padding-bottom: 3px; align-items: stretch; margin-left: 2px;">
+                <ui:VisualElement style="flex-direction: row;">
+                    <ui:Toggle name="SpecialToggle" style="flex-direction: row-reverse; margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 0; padding-left: 0; flex-shrink: 1; max-width: 125px;" />
+                    <ui:Label text="Special Level" display-tooltip-when-elided="true" style="padding-left: 3px;" />
+                </ui:VisualElement>
+                <ui:SliderInt picking-mode="Ignore" value="0" high-value="3" name="SpecialSlider" style="margin-left: 2px; margin-right: 0; margin-top: 0; margin-bottom: 0;" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

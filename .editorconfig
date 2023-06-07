@@ -1,4 +1,4 @@
-﻿[*.{cs,vb}]
+﻿[*.cs]
 
-# IDE0028: Simplify collection initialization
-dotnet_diagnostic.IDE0028.severity = none
+# IDE0251: Make member 'readonly'
+dotnet_diagnostic.IDE0251.severity = none
