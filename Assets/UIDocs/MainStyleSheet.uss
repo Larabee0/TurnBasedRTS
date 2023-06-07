@@ -1,0 +1,27 @@
+.unity-text-element {
+    color: rgba(255, 255, 255, 255);
+}
+
+.unity-radio-button__checkmark {
+    background-color: rgb(255, 255, 255);
+}
+
+.unity-radio-button__checkmark-background {
+    background-color: rgb(42, 42, 42);
+    border-left-color: rgb(37, 37, 37);
+    border-right-color: rgb(37, 37, 37);
+    border-top-color: rgb(37, 37, 37);
+    border-bottom-color: rgb(37, 37, 37);
+}
+
+.unity-button {
+    background-color: rgba(88, 101, 242, 255);
+    border-left-color: rgba(88, 101, 242, 255);
+    border-right-color: rgba(88, 101, 242, 255);
+    border-top-color: rgba(88, 101, 242, 255);
+    border-bottom-color: rgba(88, 101, 242, 255);
+    border-top-left-radius: 3px;
+    border-bottom-left-radius: 3px;
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+}
