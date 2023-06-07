@@ -466,7 +466,7 @@ namespace GameObjectHexagons
                 int originalElevation = current.Elevation;
                 int newElevation = originalElevation - sink;
 
-                if (newElevation < elevationMaximum)
+                if (newElevation < elevationMinimum)
                 {
                     continue;
                 }
@@ -625,7 +625,7 @@ namespace GameObjectHexagons
                         }
                     }
                     int m = 0;
-                    for (; m < temperatureBands.Length; m++)
+                    for (; m < moistureBands.Length; m++)
                     {
                         if (moisture < moistureBands[m])
                         {

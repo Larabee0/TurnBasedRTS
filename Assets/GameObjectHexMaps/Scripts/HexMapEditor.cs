@@ -320,6 +320,4 @@ namespace GameObjectHexagons
 
 		}
 	}
-
-	
 }

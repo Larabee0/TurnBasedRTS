@@ -90,17 +90,20 @@ namespace DOTSHexagonsV2
             cellTexture.Apply();
             return outputDeps;
         }
+
         public void ScheduleRefreshAll(EntityCommandBuffer ecb)
         {
             ecb.AddComponent<HexCellShaderRunUpdateLoop>(HexCellShaderData);
             ecb.AddComponent<HexCellShaderRefreshAll>(HexCellShaderData);
         }
+
         public void ScheduleRefreshAll()
         {
             EntityCommandBuffer ecb = ecbBeginSystem.CreateCommandBuffer();
             ecb.AddComponent<HexCellShaderRunUpdateLoop>(HexCellShaderData);
             ecb.AddComponent<HexCellShaderRefreshAll>(HexCellShaderData);
         }
+
         public void Initialise(Entity Grid, int x, int z)
         {
             HexCellShaderDataComponent data = EntityManager.GetComponentData<HexCellShaderDataComponent>(HexCellShaderData);
@@ -147,6 +150,7 @@ namespace DOTSHexagonsV2
             ecbBegin.AddComponent<SetFeatureVisability>(HexCellShaderData);
             ViewElevationChanged(ecbBegin);
         }
+
         public void RefreshTerrian(HexCell cell)
         {
             HexCellTextureDataBuffer data = EntityManager.GetBuffer<HexCellTextureDataBuffer>(HexCellShaderData).ElementAt(cell.Index);
@@ -155,6 +159,7 @@ namespace DOTSHexagonsV2
             EntityCommandBuffer ecb = ecbBeginSystem.CreateCommandBuffer();
             ecb.AddComponent<HexCellShaderRunUpdateLoop>(HexCellShaderData);
         }
+
         // will be used by the unit system
         public void RefreshVisibility(HexCell cell)
         {
@@ -173,17 +178,20 @@ namespace DOTSHexagonsV2
             }
             ecb.AddComponent<HexCellShaderRunUpdateLoop>(HexCellShaderData);
         }
+
         public void ViewElevationChanged(EntityCommandBuffer ecb)
         {
             ecb.AddComponent<HexCellShaderRunUpdateLoop>(HexCellShaderData);
             ecb.AddComponent<NeedsVisibilityReset>(HexCellShaderData);
         }
+
         public void ViewElevationChanged()
         {
             EntityCommandBuffer ecb = ecbBeginSystem.CreateCommandBuffer();
             ecb.AddComponent<HexCellShaderRunUpdateLoop>(HexCellShaderData);
             ecb.AddComponent<NeedsVisibilityReset>(HexCellShaderData);
         }
+
         // unused.
         //public void SetMapData(HexCell cell, float data)
         //{

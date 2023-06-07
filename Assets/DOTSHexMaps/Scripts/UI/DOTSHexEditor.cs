@@ -113,7 +113,7 @@ namespace DOTSHexagons
         {
             if (Input.GetKeyUp(KeyCode.C))
             {
-				for (int i = 0; i < 25; i++)
+				for (int i = 0; i < 1; i++)
 				{
 					generator.GenerateMap(32, 24, true);
 					//generator.GenerateMap(80, 60, true);
