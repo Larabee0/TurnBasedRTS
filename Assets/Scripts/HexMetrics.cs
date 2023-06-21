@@ -184,7 +184,23 @@ public static class HexMetrics
     public static Material Roads;
     public static Material Walls;
 
-	public static Material GetRendererMaterial(MeshType meshType)
+    public static Material[] HexMeshMaterials
+    {
+        get
+        {
+            Material[] materials = new Material[7];
+            materials[0] = GetRendererMaterial(MeshType.Terrain);
+            materials[1] = GetRendererMaterial(MeshType.Rivers);
+            materials[2] = GetRendererMaterial(MeshType.Water);
+            materials[3] = GetRendererMaterial(MeshType.WaterShore);
+            materials[4] = GetRendererMaterial(MeshType.Estuaries);
+            materials[5] = GetRendererMaterial(MeshType.Roads);
+            materials[6] = GetRendererMaterial(MeshType.Walls);
+            return materials;
+        }
+    }
+
+    public static Material GetRendererMaterial(MeshType meshType)
 	{
         return meshType switch
         {

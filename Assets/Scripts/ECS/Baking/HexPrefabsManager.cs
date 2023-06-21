@@ -44,14 +44,20 @@ public class HexPrefabsBaker : Baker<HexPrefabsManager>
             hexChunkCollider = GetEntity(authoring.hexChunkColliderPrefab, TransformUsageFlags.Dynamic)
         });
 
-        // please ignore how cursed this is.
+        /// please ignore how cursed this is.
+        /// <see cref="HexFeatureCollectionComponent"/> contain three <see cref="HexFeatureCollection"/>
+        /// structs, each of which contain three <see cref="HexFeatureVariants"/> structs each of which contain two
+        /// <see cref="HexFeaturePrefab"/> structs.
+        /// <see cref="HexFeaturePrefab"/> contains the entity prefab and the localY scale of the prefab.
+        /// <see cref="HexFeatureCollection"/> & <see cref="HexFeatureVariants"/> contain indexers for access.
+        /// <see cref="HexFeatureCollectionComponent"/> contains everything as its just a singleton for
+        /// access by the <see cref="HexFeatureSystem"/>
         AddComponent(entity, new HexFeatureCollectionComponent
         {
             urbanCollections = new HexFeatureCollection
             {
                 level1 = new HexFeatureVariants
                 {
-                    Count = authoring.urbanCollections[0].prefabs.Length,
                     prefab0 = new HexFeaturePrefab
                     {
                         prefab = GetEntity(authoring.urbanCollections[0].prefabs[0], TransformUsageFlags.Dynamic),
@@ -65,7 +71,6 @@ public class HexPrefabsBaker : Baker<HexPrefabsManager>
                 },
                 level2 = new HexFeatureVariants
                 {
-                    Count = authoring.urbanCollections[1].prefabs.Length,
                     prefab0 = new HexFeaturePrefab
                     {
                         prefab = GetEntity(authoring.urbanCollections[1].prefabs[0], TransformUsageFlags.Dynamic),
@@ -79,7 +84,6 @@ public class HexPrefabsBaker : Baker<HexPrefabsManager>
                 },
                 level3 = new HexFeatureVariants
                 {
-                    Count = authoring.urbanCollections[2].prefabs.Length,
                     prefab0 = new HexFeaturePrefab
                     {
                         prefab = GetEntity(authoring.urbanCollections[2].prefabs[0], TransformUsageFlags.Dynamic),
@@ -96,7 +100,6 @@ public class HexPrefabsBaker : Baker<HexPrefabsManager>
             {
                 level1 = new HexFeatureVariants
                 {
-                    Count = authoring.farmCollections[0].prefabs.Length,
                     prefab0 = new HexFeaturePrefab
                     {
                         prefab = GetEntity(authoring.farmCollections[0].prefabs[0], TransformUsageFlags.Dynamic),
@@ -110,7 +113,6 @@ public class HexPrefabsBaker : Baker<HexPrefabsManager>
                 },
                 level2 = new HexFeatureVariants
                 {
-                    Count = authoring.farmCollections[1].prefabs.Length,
                     prefab0 = new HexFeaturePrefab
                     {
                         prefab = GetEntity(authoring.farmCollections[1].prefabs[0], TransformUsageFlags.Dynamic),
@@ -124,7 +126,6 @@ public class HexPrefabsBaker : Baker<HexPrefabsManager>
                 },
                 level3 = new HexFeatureVariants
                 {
-                    Count = authoring.farmCollections[2].prefabs.Length,
                     prefab0 = new HexFeaturePrefab
                     {
                         prefab = GetEntity(authoring.farmCollections[2].prefabs[0], TransformUsageFlags.Dynamic),
@@ -141,7 +142,6 @@ public class HexPrefabsBaker : Baker<HexPrefabsManager>
             {
                 level1 = new HexFeatureVariants
                 {
-                    Count = authoring.plantCollections[0].prefabs.Length,
                     prefab0 = new HexFeaturePrefab
                     {
                         prefab = GetEntity(authoring.plantCollections[0].prefabs[0], TransformUsageFlags.Dynamic),
@@ -155,7 +155,6 @@ public class HexPrefabsBaker : Baker<HexPrefabsManager>
                 },
                 level2 = new HexFeatureVariants
                 {
-                    Count = authoring.plantCollections[1].prefabs.Length,
                     prefab0 = new HexFeaturePrefab
                     {
                         prefab = GetEntity(authoring.plantCollections[1].prefabs[0], TransformUsageFlags.Dynamic),
@@ -169,7 +168,6 @@ public class HexPrefabsBaker : Baker<HexPrefabsManager>
                 },
                 level3 = new HexFeatureVariants
                 {
-                    Count = authoring.plantCollections[2].prefabs.Length,
                     prefab0 = new HexFeaturePrefab
                     {
                         prefab = GetEntity(authoring.plantCollections[2].prefabs[0], TransformUsageFlags.Dynamic),
@@ -186,6 +184,8 @@ public class HexPrefabsBaker : Baker<HexPrefabsManager>
             bridge = GetEntity(authoring.bridge, TransformUsageFlags.Dynamic)
         });
 
+        // see the special features live in a dynamic buffer like a normal person would do
+        /// <see cref="HexFeatureSpecialPrefab"/> is just a wrapper for an entity.
         DynamicBuffer<HexFeatureSpecialPrefab> buffer =  AddBuffer<HexFeatureSpecialPrefab>(entity);
         for (int i = 0; i < authoring.special.Length; i++)
         {

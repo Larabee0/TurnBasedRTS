@@ -1,12 +1,8 @@
-using System.Collections;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Physics;
-using UnityEngine;
-using UnityEngine.UIElements;
 
 public static class HexExtensions
 {
@@ -99,6 +95,65 @@ public static class HexExtensions
             }
         }
         return (xy + (from.z < to.z ? to.z - from.z : from.z - to.z)) / 2;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void SetNeighbour(ref this HexCellNeighbours cell, HexDirection direction, int neighbourIndex)
+    {
+        switch (direction)
+        {
+            case HexDirection.NE:
+                cell.NeighbourNE = neighbourIndex;
+                break;
+            case HexDirection.E:
+                cell.NeighbourE = neighbourIndex;
+                break;
+            case HexDirection.SE:
+                cell.NeighbourSE = neighbourIndex;
+                break;
+            case HexDirection.SW:
+                cell.NeighbourSW = neighbourIndex;
+                break;
+            case HexDirection.W:
+                cell.NeighbourW = neighbourIndex;
+                break;
+            case HexDirection.NW:
+                cell.NeighbourNW = neighbourIndex;
+                break;
+        }
+    }
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void SetNeighbourEntity(ref this HexCellNeighbours cell, HexCellReference neighbour, HexDirection direction)
+    {
+        switch (direction)
+        {
+            case HexDirection.NE:
+                cell.EntityNE = neighbour.Value;
+                cell.ChunkNE = neighbour.ChunkIndex;
+                break;
+            case HexDirection.E:
+                cell.EntityE = neighbour.Value;
+                cell.ChunkE = neighbour.ChunkIndex;
+                break;
+            case HexDirection.SE:
+                cell.EntitySE = neighbour.Value;
+                cell.ChunkSE = neighbour.ChunkIndex;
+                break;
+            case HexDirection.SW:
+                cell.EntitySW = neighbour.Value;
+                cell.ChunkSW = neighbour.ChunkIndex;
+                break;
+            case HexDirection.W:
+                cell.EntityW = neighbour.Value;
+                cell.ChunkW = neighbour.ChunkIndex;
+                break;
+            case HexDirection.NW:
+                cell.EntityNW = neighbour.Value;
+                cell.ChunkNW = neighbour.ChunkIndex;
+                break;
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

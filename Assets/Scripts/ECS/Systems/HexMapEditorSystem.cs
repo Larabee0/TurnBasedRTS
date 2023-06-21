@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using Unity.Entities;
 using Unity.Collections;
 using Unity.Mathematics;
@@ -42,38 +40,47 @@ public partial class HexMapEditorSystem : SystemBase
             HexGridBasic currentGridInfo = SystemAPI.GetComponent<HexGridBasic>(activeGrid);
             if (!EventSystem.current.IsPointerOverGameObject())
             {
-                CollisionWorld collisionWorld = GetCollisionWorld();
-                if (input.leftMouseHeld && HandleInput(collisionWorld, input, out float3 hitPosition))
-                {
-                    int cellIndex = GetCell(currentGridInfo, hitPosition);
-                    Entity cell = SystemAPI.GetBuffer<HexCellReference>(activeGrid)[cellIndex].Value;
-                    
-                    if(previousCell != Entity.Null&& cell  != previousCell)
-                    {
-                        ValidateDrag(cell);
-                    }
-                    else
-                    {
-                        isDrag = false;
-                    }
-
-                    EditCell(uiState, ecb, SystemAPI.GetBuffer<HexGridChunkBuffer>(activeGrid), cell);
-                    previousCell = cell;
-                    UpdateCellHighlightData(cell);
-                }
-                else
-                {
-                    previousCell = Entity.Null;
-                    int cellIndex = GetCell(collisionWorld, currentGridInfo, input);
-                    Entity cell = cellIndex < 0 ? Entity.Null : SystemAPI.GetBuffer<HexCellReference>(activeGrid)[cellIndex].Value;
-                    UpdateCellHighlightData(cell);
-                }
+                HandleInput(input, activeGrid, uiState, ecb, currentGridInfo);
             }
             else
             {
                 previousCell = Entity.Null;
                 ClearCellHighlightData();
             }
+        }
+    }
+
+    private void HandleInput(HexMapEditorLeftMouseHeld input,
+        Entity activeGrid,
+        HexMapEditorUIState uiState,
+        EntityCommandBuffer ecb,
+        HexGridBasic currentGridInfo)
+    {
+        CollisionWorld collisionWorld = GetCollisionWorld();
+        if (input.leftMouseHeld && HandleInput(collisionWorld, input, out float3 hitPosition))
+        {
+            int cellIndex = GetCell(currentGridInfo, hitPosition);
+            Entity cell = SystemAPI.GetBuffer<HexCellReference>(activeGrid)[cellIndex].Value;
+
+            if (previousCell != Entity.Null && cell != previousCell)
+            {
+                ValidateDrag(cell);
+            }
+            else
+            {
+                isDrag = false;
+            }
+
+            EditCell(uiState, ecb, SystemAPI.GetBuffer<HexGridChunkBuffer>(activeGrid), cell);
+            previousCell = cell;
+            UpdateCellHighlightData(cell);
+        }
+        else
+        {
+            previousCell = Entity.Null;
+            int cellIndex = GetCell(collisionWorld, currentGridInfo, input);
+            Entity cell = cellIndex < 0 ? Entity.Null : SystemAPI.GetBuffer<HexCellReference>(activeGrid)[cellIndex].Value;
+            UpdateCellHighlightData(cell);
         }
     }
 

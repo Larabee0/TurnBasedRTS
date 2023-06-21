@@ -4,81 +4,82 @@ using Unity.Entities;
 /// <summary>
 /// This is kind of awful and you can probably mathematically determine everything here
 /// but given the grid sizes change and we have Burst, this is running in parallel on all cells and it will only ever run once per grid, meh
+/// This computationally works out what cells a cell neighbours in all <see cref="HexDirection"/>
 /// </summary>
 [BurstCompile]
 public partial struct FindCellNeighboursJob : IJobEntity
 {
     public EntityCommandBuffer.ParallelWriter ecbEnd;
-    public void Execute([ChunkIndexInQuery] int chunkIndex, Entity main, ref HexCellNeighbours neighbours, in HexCellBasic basic, in FindNeighbours findNeighbours)
+    public void Execute([ChunkIndexInQuery] int chunkIndex, Entity main, ref HexCellNeighbours curNeighbours, in HexCellBasic curBasic, in FindNeighbours curFindNeighbours)
     {
-        if (basic.rawX < findNeighbours.cellCountX - 1)
+        if (curBasic.rawX < curFindNeighbours.cellCountX - 1)
         {
-            HexCellNeighbours.SetNeighbour(ref neighbours, HexDirection.E, basic.Index + 1);
-            if (basic.wrapping && basic.rawX == 0)
+            curNeighbours.SetNeighbour(HexDirection.E, curBasic.Index + 1);
+            if (curBasic.wrapping && curBasic.rawX == 0)
             {
-                HexCellNeighbours.SetNeighbour(ref neighbours, HexDirection.W, basic.Index + findNeighbours.cellCountX - 1);
+                curNeighbours.SetNeighbour(HexDirection.W, curBasic.Index + curFindNeighbours.cellCountX - 1);
             }
         }
-        if (basic.rawX > 0)
+        if (curBasic.rawX > 0)
         {
-            HexCellNeighbours.SetNeighbour(ref neighbours, HexDirection.W, basic.Index - 1);
-            if (basic.wrapping && basic.rawX == findNeighbours.cellCountX - 1)
+            curNeighbours.SetNeighbour(HexDirection.W, curBasic.Index - 1);
+            if (curBasic.wrapping && curBasic.rawX == curFindNeighbours.cellCountX - 1)
             {
-                HexCellNeighbours.SetNeighbour(ref neighbours, HexDirection.E, basic.Index - basic.rawX);
+                curNeighbours.SetNeighbour(HexDirection.E, curBasic.Index - curBasic.rawX);
             }
         }
-        if (basic.rawZ < findNeighbours.cellCountZ - 1)
+        if (curBasic.rawZ < curFindNeighbours.cellCountZ - 1)
         {
-            switch (basic.rawZ & 1)
+            switch (curBasic.rawZ & 1)
             {
                 case 0:
-                    HexCellNeighbours.SetNeighbour(ref neighbours, HexDirection.NE, basic.Index + findNeighbours.cellCountX);
-                    if (basic.rawX > 0)
+                    curNeighbours.SetNeighbour(HexDirection.NE, curBasic.Index + curFindNeighbours.cellCountX);
+                    if (curBasic.rawX > 0)
                     {
-                        HexCellNeighbours.SetNeighbour(ref neighbours, HexDirection.NW, basic.Index + findNeighbours.cellCountX - 1);
+                        curNeighbours.SetNeighbour(HexDirection.NW, curBasic.Index + curFindNeighbours.cellCountX - 1);
                     }
-                    else if (basic.wrapping)
+                    else if (curBasic.wrapping)
                     {
-                        HexCellNeighbours.SetNeighbour(ref neighbours, HexDirection.NW, basic.Index + findNeighbours.cellCountX * 2 - 1);
+                        curNeighbours.SetNeighbour(HexDirection.NW, curBasic.Index + curFindNeighbours.cellCountX * 2 - 1);
                     }
                     break;
                 default:
-                    HexCellNeighbours.SetNeighbour(ref neighbours, HexDirection.NW, basic.Index + findNeighbours.cellCountX);
-                    if (basic.rawX < findNeighbours.cellCountX - 1)
+                    curNeighbours.SetNeighbour(HexDirection.NW, curBasic.Index + curFindNeighbours.cellCountX);
+                    if (curBasic.rawX < curFindNeighbours.cellCountX - 1)
                     {
-                        HexCellNeighbours.SetNeighbour(ref neighbours, HexDirection.NE, basic.Index + findNeighbours.cellCountX + 1);
+                        curNeighbours.SetNeighbour(HexDirection.NE, curBasic.Index + curFindNeighbours.cellCountX + 1);
                     }
-                    else if (basic.wrapping)
+                    else if (curBasic.wrapping)
                     {
-                        HexCellNeighbours.SetNeighbour(ref neighbours, HexDirection.NE, basic.Index + 1);
+                        curNeighbours.SetNeighbour(HexDirection.NE, curBasic.Index + 1);
                     }
                     break;
             }
         }
-        if (basic.rawZ > 0)
+        if (curBasic.rawZ > 0)
         {
-            switch (basic.rawZ & 1)
+            switch (curBasic.rawZ & 1)
             {
                 case 0:
-                    HexCellNeighbours.SetNeighbour(ref neighbours, HexDirection.SE, basic.Index - findNeighbours.cellCountX);
-                    if (basic.rawX > 0)
+                    curNeighbours.SetNeighbour(HexDirection.SE, curBasic.Index - curFindNeighbours.cellCountX);
+                    if (curBasic.rawX > 0)
                     {
-                        HexCellNeighbours.SetNeighbour(ref neighbours, HexDirection.SW, basic.Index - findNeighbours.cellCountX - 1);
+                        curNeighbours.SetNeighbour(HexDirection.SW, curBasic.Index - curFindNeighbours.cellCountX - 1);
                     }
-                    else if (basic.wrapping)
+                    else if (curBasic.wrapping)
                     {
-                        HexCellNeighbours.SetNeighbour(ref neighbours, HexDirection.SW, basic.Index - 1);
+                        curNeighbours.SetNeighbour(HexDirection.SW, curBasic.Index - 1);
                     }
                     break;
                 default:
-                    HexCellNeighbours.SetNeighbour(ref neighbours, HexDirection.SW, basic.Index - findNeighbours.cellCountX);
-                    if (basic.rawX < findNeighbours.cellCountX - 1)
+                    curNeighbours.SetNeighbour(HexDirection.SW, curBasic.Index - curFindNeighbours.cellCountX);
+                    if (curBasic.rawX < curFindNeighbours.cellCountX - 1)
                     {
-                        HexCellNeighbours.SetNeighbour(ref neighbours, HexDirection.SE, basic.Index - findNeighbours.cellCountX + 1);
+                        curNeighbours.SetNeighbour( HexDirection.SE, curBasic.Index - curFindNeighbours.cellCountX + 1);
                     }
-                    else if (basic.wrapping)
+                    else if (curBasic.wrapping)
                     {
-                        HexCellNeighbours.SetNeighbour(ref neighbours, HexDirection.SE, basic.Index - findNeighbours.cellCountX * 2 + 1);
+                        curNeighbours.SetNeighbour( HexDirection.SE, curBasic.Index - curFindNeighbours.cellCountX * 2 + 1);
                     }
                     break;
             }

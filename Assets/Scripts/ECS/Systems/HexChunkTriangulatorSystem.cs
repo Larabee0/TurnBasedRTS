@@ -127,14 +127,3 @@ public partial struct HexChunkTriangulatorSystem : ISystem
         return ecb.AsParallelWriter();
     }
 }
-
-[BurstCompile, WithAll(typeof(HexChunkRefreshRequest)), WithNone(typeof(HexChunkRefresh))]
-public partial struct HandleChunkRefreshRequestJob : IJobEntity
-{
-    public EntityCommandBuffer.ParallelWriter ecb;
-    public void Execute([ChunkIndexInQuery] int jobChunkIndex, Entity main)
-    {
-        ecb.RemoveComponent<HexChunkRefreshRequest>(jobChunkIndex, main);
-        ecb.AddComponent<HexChunkRefresh>(jobChunkIndex, main);
-    }
-}

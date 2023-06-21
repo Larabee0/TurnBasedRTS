@@ -9,11 +9,13 @@ using UnityEngine;
 public class HexMeshBaker : MonoBehaviour
 {
     public HexMeshData hexMeshData;
+    public bool meshDebugging = false;
 }
 
 /// <summary>
 /// HexMesh baker, adds the rquired components for the HexMesh in the entity world.
-/// If this is the Terrain Mesh additionally add the PhysicsWorldIndex for the collider.
+/// If mesh debugging is set to true the HexMeshDebugger component is also added which provides
+/// mesh diagnoistic information (triangle count, vertex count, submesh index) in the inspector.
 /// </summary>
 public class HexMeshBaking : Baker<HexMeshBaker>
 {
@@ -22,10 +24,10 @@ public class HexMeshBaking : Baker<HexMeshBaker>
         Entity entity = GetEntity(TransformUsageFlags.Dynamic);
         AddComponent(entity, authoring.hexMeshData);
         AddComponent<HexMeshUninitilised>(entity);
-        // AddComponent<HexMeshDebugger>(entity);
-        // if (authoring.hexMeshData.type == MeshType.Terrain)
-        // {
-        //     AddSharedComponentManaged(entity, new PhysicsWorldIndex { Value = 0 });
-        // }
+
+        if (authoring.meshDebugging)
+        {
+            AddComponent<HexMeshDebugger>(entity);
+        }
     }
 }

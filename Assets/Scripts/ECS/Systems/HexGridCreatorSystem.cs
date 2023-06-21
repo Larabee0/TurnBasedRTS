@@ -70,40 +70,54 @@ public partial struct HexGridCreatorSystem : ISystem
             ecbEnd = ecb,
         }.ScheduleParallel();
 
-        new SortHexCellIndex
+        new SortHexCellIndexJob
         {
             ecbEnd = ecb,
         }.ScheduleParallel();
 
         if (!HexGridSetNeighbourEntitySetGrid.IsEmpty && !HexGridSetNeighbourEntitySet.IsEmpty)
         {
-            Entity grid = HexGridSetNeighbourEntitySetGrid.GetSingletonEntity();
-            NativeArray<HexCellReference> hexCells = state.EntityManager.GetBuffer<HexCellReference>(grid, true).ToNativeArray(Allocator.TempJob);
-            
-            new CompleteNeighboursJob
-            {
-                hexCells = hexCells,
-                ecbEnd = ecb,
-            }.ScheduleParallel();
+            state = CompleteNeighbours(ref state, ecb);
             latch = true;
         }
         else if (!HexGridSetNeighbourEntitySetGrid.IsEmpty && latch)
         {
-            Entity grid = HexGridSetNeighbourEntitySetGrid.GetSingletonEntity();
-            DynamicBuffer<HexGridChunkBuffer> chunks = SystemAPI.GetBuffer<HexGridChunkBuffer>(grid);
-            for (int i = 0; i < chunks.Length; i++)
-            {
-                ecb.AddComponent<HexChunkRefreshRequest>(grid.Index, chunks[i].Value);
-            }
-            
-            ecb.RemoveComponent<HexGridNeighbourEntitySet>(grid.Index, grid);
-            latch = false;
-
-            HexGridBasic basicData = SystemAPI.GetComponent<HexGridBasic>(grid);
-            ecb.AddComponent<HexGridActive>(grid.Index, grid);
-            state.EntityManager.AddComponentData(state.SystemHandle, new HexShaderInitialise { grid = grid, x = basicData.cellCountX, z = basicData.cellCountZ });
-            // HexMapUIInterface.Instance.SetMap(grid);
+            state = RequestInitialChunkRefresh(ref state, ecb);
         }
+    }
+
+    [BurstCompile]
+    private SystemState RequestInitialChunkRefresh(ref SystemState state, EntityCommandBuffer.ParallelWriter ecb)
+    {
+        Entity grid = HexGridSetNeighbourEntitySetGrid.GetSingletonEntity();
+        DynamicBuffer<HexGridChunkBuffer> chunks = SystemAPI.GetBuffer<HexGridChunkBuffer>(grid);
+        for (int i = 0; i < chunks.Length; i++)
+        {
+            ecb.AddComponent<HexChunkRefreshRequest>(grid.Index, chunks[i].Value);
+        }
+
+        ecb.RemoveComponent<HexGridNeighbourEntitySet>(grid.Index, grid);
+        latch = false;
+
+        HexGridBasic basicData = SystemAPI.GetComponent<HexGridBasic>(grid);
+        ecb.AddComponent<HexGridActive>(grid.Index, grid);
+        state.EntityManager.AddComponentData(state.SystemHandle, new HexShaderInitialise { grid = grid, x = basicData.cellCountX, z = basicData.cellCountZ });
+        // HexMapUIInterface.Instance.SetMap(grid);
+        return state;
+    }
+
+    [BurstCompile]
+    private SystemState CompleteNeighbours(ref SystemState state, EntityCommandBuffer.ParallelWriter ecb)
+    {
+        Entity grid = HexGridSetNeighbourEntitySetGrid.GetSingletonEntity();
+        NativeArray<HexCellReference> hexCells = state.EntityManager.GetBuffer<HexCellReference>(grid, true).ToNativeArray(Allocator.TempJob);
+
+        new CompleteNeighboursJob
+        {
+            hexCells = hexCells,
+            ecbEnd = ecb,
+        }.ScheduleParallel();
+        return state;
     }
 
     [BurstCompile]
@@ -113,5 +127,4 @@ public partial struct HexGridCreatorSystem : ISystem
         var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
         return ecb.AsParallelWriter();
     }
-
 }

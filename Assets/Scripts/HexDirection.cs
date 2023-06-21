@@ -17,14 +17,14 @@ public enum HexDirection : sbyte
 	NW
 }
 
-public enum HemiSphereMode
+public enum HemiSphereMode : byte
 {
     Both,
     North,
     South
 }
 
-public enum MeshType
+public enum MeshType : byte
 {
     Terrain,
     Rivers,

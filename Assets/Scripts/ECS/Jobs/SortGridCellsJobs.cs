@@ -3,8 +3,9 @@ using Unity.Collections;
 using Unity.Entities;
 
 /// <summary>
-/// Because InstantiateCellsJob runs asyncronously there is the danger cells are added to the grid's HexCellReference buffer out of order
-/// (not grouped in chunks). So it must be sorted by chunk index
+/// Because <see cref="InstantiateCellsJob"/> runs asyncronously there is the danger cells are added
+/// to the grid's <see cref="HexCellReference"/> buffer out of order (not grouped in chunks). So it must be sorted by chunk index
+/// for <see cref="InitialiseCellsJob"/> to run properly
 /// </summary>
 [BurstCompile, WithAll(typeof(HexGridBasic), typeof(HexGridSortCells))]
 public partial struct SortHexCellChunkJob : IJobEntity
@@ -20,8 +21,12 @@ public partial struct SortHexCellChunkJob : IJobEntity
     }
 }
 
+/// <summary>
+/// We don't actually want the grid  <see cref="HexCellReference"/> buffer sorted by chunk index after creation has finished
+/// so we run this job to sort it by cell index
+/// </summary>
 [BurstCompile, WithAll(typeof(HexGridBasic), typeof(HexGridNeighbourEntitySetUnsorted))]
-public partial struct SortHexCellIndex : IJobEntity
+public partial struct SortHexCellIndexJob : IJobEntity
 {
     public EntityCommandBuffer.ParallelWriter ecbEnd;
     public void Execute([ChunkIndexInQuery] int chunkIndex, Entity main, ref DynamicBuffer<HexCellReference> hexCellBuffer)

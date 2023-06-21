@@ -1,8 +1,6 @@
-using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
-using Unity.Entities.UniversalDelegates;
 using Unity.Mathematics;
 using Unity.Rendering;
 using UnityEngine;
@@ -43,6 +41,21 @@ public partial class HexChunkMeshApplicatorSystem : SystemBase
     {
         EntityCommandBuffer ecbEnd = GetEntityCommandBuffer();
 
+        DebugHexMeshes();
+
+        if (!hexMeshInitQuery.IsEmpty)
+        {
+            InitialiseMeshes(ecbEnd);
+        }
+
+        if (!TriangulatorCompleteQuery.IsEmpty)
+        {
+            CompleteTriangulator(ecbEnd);
+        }
+    }
+
+    private void DebugHexMeshes()
+    {
         foreach ((RefRW<HexMeshDebugger> meshDebug, MaterialMeshInfo meshInfo, Entity meshEntity) in SystemAPI.Query<RefRW<HexMeshDebugger>, MaterialMeshInfo>().WithEntityAccess())
         {
             RenderMeshArray renderMeshArray = EntityManager.GetSharedComponentManaged<RenderMeshArray>(meshEntity);
@@ -61,16 +74,6 @@ public partial class HexChunkMeshApplicatorSystem : SystemBase
                 meshDebug.ValueRW.triangleArrayCount = mesh.GetIndexCount(meshInfo.Submesh);
             }
         }
-
-        if (!hexMeshInitQuery.IsEmpty)
-        {
-            InitialiseMeshes(ecbEnd);
-        }
-
-        if (!TriangulatorCompleteQuery.IsEmpty)
-        {
-            CompleteTriangulator(ecbEnd);
-        }
     }
 
     private void InitialiseMeshes(EntityCommandBuffer ecbEnd)
@@ -78,16 +81,9 @@ public partial class HexChunkMeshApplicatorSystem : SystemBase
         int hexMeshEntities = hexMeshInitQuery.CalculateEntityCount();
         NativeArray<Entity> entities = hexMeshInitQuery.ToEntityArray(Allocator.Temp);
         NativeArray<HexMeshData> meshData = hexMeshInitQuery.ToComponentDataArray<HexMeshData>(Allocator.Temp);
-        Material[] materials = new Material[7];
-        materials[0] = HexMetrics.GetRendererMaterial(MeshType.Terrain);
-        materials[1] = HexMetrics.GetRendererMaterial(MeshType.Rivers);
-        materials[2] = HexMetrics.GetRendererMaterial(MeshType.Water);
-        materials[3] = HexMetrics.GetRendererMaterial(MeshType.WaterShore);
-        materials[4] = HexMetrics.GetRendererMaterial(MeshType.Estuaries);
-        materials[5] = HexMetrics.GetRendererMaterial(MeshType.Roads);
-        materials[6] = HexMetrics.GetRendererMaterial(MeshType.Walls);
-
+        Material[] materials = HexMetrics.HexMeshMaterials;
         Mesh[] meshes = new Mesh[hexMeshEntities];
+
         for (int i = 0; i < hexMeshEntities; i++)
         {
             meshes[i] = new Mesh() { name = string.Format("{1} Index {0}", i, meshData[i].type) };
@@ -139,42 +135,60 @@ public partial class HexChunkMeshApplicatorSystem : SystemBase
         int wrapperIndex = GetWrapperIndex(stamp, meshDataWrappers.ValueRW.meshDataWrappers);
         if (wrapperIndex != -1)
         {
-            Mesh.ApplyAndDisposeWritableMeshData(meshDataWrappers.ValueRW.meshDataWrappers[wrapperIndex].meshDataArray, meshes);
-            meshDataWrappers.ValueRW.meshDataWrappers[wrapperIndex].chunksIncluded.Dispose();
-            meshDataWrappers.ValueRW.meshDataWrappers.RemoveAt(wrapperIndex);
-            
-            UnsafeList <Entity> colliderEntities = new (chunkMeshEntities.Length,Allocator.Persistent,NativeArrayOptions.UninitializedMemory);
-            colliderEntities.Resize(chunkMeshEntities.Length);
-            Mesh[] meshesForColliders = new Mesh[chunkMeshEntities.Length];
-            for (int i = 0, m = 0; i < chunkMeshEntities.Length; i++, m += 7)
+            ApplyMeshesToEntities(ecbEnd, chunks, chunkMeshEntities, chunkWitnesses, meshes, stamp, meshDataWrappers, wrapperIndex);
+        }
+    }
+
+    private void ApplyMeshesToEntities(EntityCommandBuffer ecbEnd,
+        NativeArray<Entity> chunks,
+        NativeArray<HexChunkMeshEntities> chunkMeshEntities,
+        NativeArray<HexChunkMeshUpdating> chunkWitnesses,
+        Mesh[] meshes,
+        double stamp,
+        RefRW<HexChunkTriangulatorArray> meshDataWrappers,
+        int wrapperIndex)
+    {
+        Mesh.ApplyAndDisposeWritableMeshData(meshDataWrappers.ValueRW.meshDataWrappers[wrapperIndex].meshDataArray, meshes);
+        meshDataWrappers.ValueRW.meshDataWrappers[wrapperIndex].chunksIncluded.Dispose();
+        meshDataWrappers.ValueRW.meshDataWrappers.RemoveAt(wrapperIndex);
+
+        UnsafeList<Entity> colliderEntities = new(chunkMeshEntities.Length, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+        colliderEntities.Resize(chunkMeshEntities.Length);
+        Mesh[] meshesForColliders = new Mesh[chunkMeshEntities.Length];
+        for (int i = 0, m = 0; i < chunkMeshEntities.Length; i++, m += 7)
+        {
+            if (stamp != chunkWitnesses[i].timeStamp)
             {
-                if (stamp != chunkWitnesses[i].timeStamp)
-                {
-                    Debug.LogError("Missaligned chunks! Mesh applicaiton will fail");
-                }
-                ecbEnd.RemoveComponent<HexChunkMeshUpdating>(chunks[i]);
-                ecbEnd.RemoveComponent<HexChunkRefresh>(chunks[i]);
-
-                HexChunkMeshEntities meshEntities = chunkMeshEntities[i];
-
-                meshesForColliders[i] = meshes[SystemAPI.GetComponent<HexMeshChunkIndex>(meshEntities.Terrain).meshArrayIndex];
-                colliderEntities[i] = meshEntities.Terrain;
-                for (int e = 0; e < 7; e++)
-                {
-                    int meshIndex = SystemAPI.GetComponent<HexMeshChunkIndex>(meshEntities[e]).meshArrayIndex;
-                    ecbEnd.RemoveComponent<HexMeshChunkIndex>(meshEntities[e]);
-                    if (meshes[meshIndex].subMeshCount == 0)
-                    {
-                        continue;
-                    }
-                    meshes[meshIndex].RecalculateBounds();
-                    AABB bounds = meshes[meshIndex].bounds.ToAABB();
-                    ecbEnd.SetComponent(meshEntities[e], new RenderBounds { Value = bounds });
-                }
+                Debug.LogError("Missaligned chunks! Mesh applicaiton will fail");
             }
+            ecbEnd.RemoveComponent<HexChunkMeshUpdating>(chunks[i]);
+            ecbEnd.RemoveComponent<HexChunkRefresh>(chunks[i]);
 
-            RefRW<HexChunkColliderArray> data = GetColliderArrayData();
-            data.ValueRW.colliderQueue.Add(new HexChunkColliderQueue() { colliderTargetMeshes = Mesh.AcquireReadOnlyMeshData(meshesForColliders), entities = colliderEntities });
+            HexChunkMeshEntities meshEntities = chunkMeshEntities[i];
+
+            meshesForColliders[i] = meshes[SystemAPI.GetComponent<HexMeshChunkIndex>(meshEntities.Terrain).meshArrayIndex];
+            colliderEntities[i] = meshEntities.Terrain;
+
+            CalculateBounds(ecbEnd, meshes, meshEntities);
+        }
+
+        RefRW<HexChunkColliderArray> data = GetColliderArrayData();
+        data.ValueRW.colliderQueue.Add(new HexChunkColliderQueue() { colliderTargetMeshes = Mesh.AcquireReadOnlyMeshData(meshesForColliders), entities = colliderEntities });
+    }
+
+    private void CalculateBounds(EntityCommandBuffer ecbEnd, Mesh[] meshes, HexChunkMeshEntities meshEntities)
+    {
+        for (int e = 0; e < 7; e++)
+        {
+            int meshIndex = SystemAPI.GetComponent<HexMeshChunkIndex>(meshEntities[e]).meshArrayIndex;
+            ecbEnd.RemoveComponent<HexMeshChunkIndex>(meshEntities[e]);
+            if (meshes[meshIndex].subMeshCount == 0)
+            {
+                continue;
+            }
+            meshes[meshIndex].RecalculateBounds();
+            AABB bounds = meshes[meshIndex].bounds.ToAABB();
+            ecbEnd.SetComponent(meshEntities[e], new RenderBounds { Value = bounds });
         }
     }
 

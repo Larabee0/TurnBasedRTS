@@ -1,6 +1,4 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using Unity.Entities;
 using UnityEngine;
 
@@ -14,6 +12,8 @@ using UnityEngine;
 /// This is mostly because Domain Reloading is disabled per the documentation <see cref="https://docs.unity3d.com/Packages/com.unity.entities@1.0/manual/getting-started-installation.html#domain-reload-setting"/>
 /// so static variables are not reset
 /// when you enter playmode.
+/// 
+/// This baker is now also responsible for map generation settings.
 /// </summary>
 public class HexGridBaker : MonoBehaviour
 {
@@ -110,6 +110,12 @@ public class HexGridBaker : MonoBehaviour
 
     }
 
+    /// <summary>
+    /// Converts the public fields into a component.
+    /// This isn't just serializable because you cannot set default values for a struct
+    /// </summary>
+    /// <param name="seed">Random number generated start seed for this map</param>
+    /// <returns>Generation settings used by the map generator</returns>
     public HexMapGenerationSettings CreateGenerationData(uint seed)
     {
         return new HexMapGenerationSettings
@@ -213,8 +219,10 @@ public class HexGridBaking : Baker<HexGridBaker>
             wrapSize = HexMetrics.wrapSize
         });
 
+        // grids don't have to generate a map.
         if (authoring.generate)
         {
+            // processing for the seed if a random seed is enabled.
             uint seed = authoring.seed;
             if (!authoring.useFixedSeed)
             {
@@ -223,6 +231,7 @@ public class HexGridBaking : Baker<HexGridBaker>
                 seed ^= (uint)Time.unscaledTime;
                 seed &= uint.MaxValue;
             }
+
             AddComponent(entity, authoring.CreateGenerationData(seed));
             AddComponent(entity, new HexMapGenerate());
         }

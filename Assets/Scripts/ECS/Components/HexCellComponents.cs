@@ -7,6 +7,7 @@ using UnityEngine.UIElements;
 
 /// <summary>
 /// 34 bytes min
+/// This stores basic information about a Cell. Position, cell index, column index, virtual coordinates and HexCoordinates
 /// </summary>
 public struct HexCellBasic : IComponentData, IComparable<HexCellBasic>
 {
@@ -26,6 +27,8 @@ public struct HexCellBasic : IComponentData, IComparable<HexCellBasic>
 
 /// <summary>
 /// 50 bytes min
+/// Contains purely terrain information, primarily used by <see cref="HexChunkTriangulatorSystem"/> in the <see cref="HexChunkCellWrapper"/>
+/// This information will also be used by the <see cref="HexShaderSystem"/> and modified by the <see cref="HexMapEditorSystem"/>
 /// </summary>
 public struct HexCellTerrain : IComponentData
 {
@@ -65,6 +68,7 @@ public struct HexCellTerrain : IComponentData
 
 /// <summary>
 /// 8 bytes min
+/// Used by the <see cref="HexShaderSystem"/> primarily in the <see cref="HexCellShaderRefreshWrapper"/> buffer
 /// </summary>
 public struct HexCellNav : IComponentData
 {
@@ -76,8 +80,12 @@ public struct HexCellNav : IComponentData
     public bool IsExplored => explored && explorable;
 }
 
-
-public struct HexCellShaderRefresh : IBufferElementData
+/// <summary>
+/// 16 bytes min
+/// contains <see cref="HexCellNav"/> and other required information for the <see cref="HexShaderSystem"/> in
+/// the <see cref="RefreshAllCellsJob"/> and <see cref="TransitionCellsJob"/>
+/// </summary>
+public struct HexCellShaderRefreshWrapper : IBufferElementData
 {
     public int index;
     public int terrainTypeIndex;
@@ -89,22 +97,16 @@ public struct HexCellShaderRefresh : IBufferElementData
 
 /// <summary>
 /// 12 bytes min
+/// Component used during grid creatation <see cref="HexGridCreatorSystem"/>
+/// This contains information about a cell for finding neighbouring cells.
+/// This gets attached to a cell and contains the grid dimentions and the number of chunks in the x dimention
+/// This is added in hte <see cref="InitialiseCellsJob"/> and removed in the <see cref="FindCellNeighboursJob"/>
 /// </summary>
 public struct FindNeighbours : IComponentData
 {
     public int cellCountX;
     public int cellCountZ;
     public int chunkCountX;
-}
-
-/// <summary>
-/// 8 bytes min
-/// </summary>
-public struct HexGridReference : IComponentData
-{
-    public Entity Value;
-    public static implicit operator Entity(HexGridReference v) { return v.Value; }
-    public static implicit operator HexGridReference(Entity v) { return new HexGridReference { Value = v }; }
 }
 
 /// <summary>
@@ -116,13 +118,24 @@ public struct HexCellChunkReference : IComponentData
     public int chunkIndex;
 }
 
+/// <summary>
+/// 8 bytes min
+/// Added to cell in <see cref="FindCellNeighboursJob"/> This instructs the cell to add itself to the chunk entity provided
+/// as it is a cell directly adjacent to that chunk, thus would be needed for triangulation, so the chunk needs to know to ask
+/// for its data when it is triangulated.
+/// It is removed in <see cref="ProvideChunkNeighbourCellsJob"/>
+/// </summary>
 public struct HexCellSetReferenceInNeighbouringChunk : IBufferElementData
 {
     public Entity chunk;
+    public static implicit operator Entity(HexCellSetReferenceInNeighbouringChunk v) { return v.chunk; }
+    public static implicit operator HexCellSetReferenceInNeighbouringChunk(Entity v) { return new HexCellSetReferenceInNeighbouringChunk { chunk = v }; }
 }
 
 /// <summary>
 /// 120 bytes min
+/// If you thought <see cref="HexCellTerrain"/> was a big component, this is more than twice the size.
+/// This stores the neighbouring cell Indices and their entities as well as the chunk index of those cells.
 /// </summary>
 public struct HexCellNeighbours : IComponentData
 {
@@ -147,78 +160,27 @@ public struct HexCellNeighbours : IComponentData
     public int ChunkW;
     public int ChunkNW;
 
-    public static HexCellNeighbours Empty()
+    public static HexCellNeighbours Empty => new()
     {
-        return new HexCellNeighbours
-        {
-            NeighbourNE = -1,
-            NeighbourE = -1,
-            NeighbourSE = -1,
-            NeighbourSW = -1,
-            NeighbourW = -1,
-            NeighbourNW = -1
-        };
-    }
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void SetNeighbour(ref HexCellNeighbours cell, HexDirection direction, int neighbourIndex)
-    {
-        switch (direction)
-        {
-            case HexDirection.NE:
-                cell.NeighbourNE = neighbourIndex;
-                break;
-            case HexDirection.E:
-                cell.NeighbourE = neighbourIndex;
-                break;
-            case HexDirection.SE:
-                cell.NeighbourSE = neighbourIndex;
-                break;
-            case HexDirection.SW:
-                cell.NeighbourSW = neighbourIndex;
-                break;
-            case HexDirection.W:
-                cell.NeighbourW = neighbourIndex;
-                break;
-            case HexDirection.NW:
-                cell.NeighbourNW = neighbourIndex;
-                break;
-        }
-    }
-
-    public static void SetNeighbourEntity(ref HexCellNeighbours cell, HexCellReference neighbour, HexDirection direction)
-    {
-        switch (direction)
-        {
-            case HexDirection.NE:
-                cell.EntityNE = neighbour.Value;
-                cell.ChunkNE = neighbour.ChunkIndex;
-                break;
-            case HexDirection.E:
-                cell.EntityE = neighbour.Value;
-                cell.ChunkE = neighbour.ChunkIndex;
-                break;
-            case HexDirection.SE:
-                cell.EntitySE = neighbour.Value;
-                cell.ChunkSE = neighbour.ChunkIndex;
-                break;
-            case HexDirection.SW:
-                cell.EntitySW = neighbour.Value;
-                cell.ChunkSW = neighbour.ChunkIndex;
-                break;
-            case HexDirection.W:
-                cell.EntityW = neighbour.Value;
-                cell.ChunkW = neighbour.ChunkIndex;
-                break;
-            case HexDirection.NW:
-                cell.EntityNW = neighbour.Value;
-                cell.ChunkNW = neighbour.ChunkIndex;
-                break;
-        }
-    }
+        NeighbourNE = -1,
+        NeighbourE = -1,
+        NeighbourSE = -1,
+        NeighbourSW = -1,
+        NeighbourW = -1,
+        NeighbourNW = -1,
+        ChunkNE = -1,
+        ChunkE = -1,
+        ChunkSE = -1,
+        ChunkSW = -1,
+        ChunkW = -1,
+        ChunkNW = -1,
+    };
 }
 
+
+/// <summary>
+/// Sorter struct for NativeArray.Sort. This sorts an array of HexCellReference's by their chunk index
+/// </summary>
 public struct HexCellChunkSorter : IComparer<HexCellReference>
 {
     public int Compare(HexCellReference a, HexCellReference b)
@@ -227,19 +189,26 @@ public struct HexCellChunkSorter : IComparer<HexCellReference>
     }
 }
 
-public struct HexCellIndexSorter : IComparer<HexCellReference>, IComparer<HexCellShaderRefresh>
+
+/// <summary>
+/// Sorter struct for NativeArray.Sort. This sorts an array of HexCellReference's by their cell index.
+/// </summary>
+public struct HexCellIndexSorter : IComparer<HexCellReference>, IComparer<HexCellShaderRefreshWrapper>
 {
     public int Compare(HexCellReference a, HexCellReference b)
     {
         return a.Index.CompareTo(b.Index);
     }
 
-    public int Compare(HexCellShaderRefresh a, HexCellShaderRefresh b)
+    public int Compare(HexCellShaderRefreshWrapper a, HexCellShaderRefreshWrapper b)
     {
         return a.index.CompareTo(b.index);
     }
 }
 
+/// <summary>
+///  Sorter struct for NativeArray.Sort. This sorts an array of HexChunkCellWrapper's by their cell index.
+/// </summary>
 public struct WrappedCellIndexSorter : IComparer<HexChunkCellWrapper>
 {
     public int Compare(HexChunkCellWrapper a, HexChunkCellWrapper b)

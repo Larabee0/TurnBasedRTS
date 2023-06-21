@@ -19,9 +19,9 @@ public class HexCellBaking : Baker<HexCellBaker>
     {
         Entity entity = GetEntity(TransformUsageFlags.Dynamic);
         AddComponent<HexCellBasic>(entity);
-        AddComponent<HexGridReference>(entity);
+        // AddComponent<HexGridReference>(entity);
         AddComponent<HexCellTerrain>(entity);
         AddComponent<HexCellNav>(entity);
-        AddComponent(entity, HexCellNeighbours.Empty());
+        AddComponent(entity, HexCellNeighbours.Empty);
     }
 }

@@ -1,10 +1,10 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
 using Unity.Entities;
+using Unity.Mathematics;
 
-
-
+/// <summary>
+/// 110 bytes min
+/// All the terrain generation settings used by the <see cref="HexMapGeneratorSystem"/>
+/// </summary>
 public struct HexMapGenerationSettings : IComponentData
 {
     public float jitterProbability;
@@ -38,8 +38,14 @@ public struct HexMapGenerationSettings : IComponentData
     public HemiSphereMode hemiSphereMode;
 }
 
+/// <summary>
+/// Tag to trigger <see cref="HexMapGeneratorSystem"/> to generate the map
+/// </summary>
 public struct HexMapGenerate : IComponentData { }
 
+/// <summary>
+/// Struct used during terrain generation to store various biomes
+/// </summary>
 public struct Biome
 {
     public int terrian, plant;
@@ -51,20 +57,29 @@ public struct Biome
     }
 }
 
+/// <summary>
+/// Struct used during terrain generation to denote map regions corners
+/// </summary>
 public struct MapRegion
 {
-    public int xMin, xMax, zMin, zMax;
+    private int4 data;
+    public int XMin { get => data.x; set => data.x = value; }
+    public int YMax { get => data.y; set => data.y = value; }
+    public int ZMin { get => data.z; set => data.z = value; }
+    public int ZMax { get => data.w; set => data.w = value; }
 
     public MapRegion(int xMin, int xMax, int zMin, int zMax)
     {
-        this.xMax = xMax;
-        this.xMin = xMin;
-        this.zMin = zMin;
-        this.zMax = zMax;
+        data = new int4(xMin, xMax, zMin, zMax);
     }
 }
 
+/// <summary>
+/// Struct used during terrain generation to keep track water data during errions (rainfall not sea)
+/// </summary>
 public struct ClimateData
 {
-    public float clouds, moisture;
+    private float2 data;
+    public float Clouds { get => data.x; set => data.x = value; }
+    public float Moisture { get => data.y; set => data.y = value; }
 }

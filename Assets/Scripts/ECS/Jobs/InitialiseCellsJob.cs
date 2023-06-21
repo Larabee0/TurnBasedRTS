@@ -32,12 +32,12 @@ public partial struct InitialiseCellsJob : IJobEntity
                 int localZ = gridZ - chunkZ * HexMetrics.chunkSizeZ;
                 int cellBufferIndex = localX + localZ * HexMetrics.chunkSizeX + (chunkIndex * chunkSize);
 
-                // set cellIndex in GridCellReference buffer
+                // set cellIndex in HexCellReference buffer
                 HexCellReference cell = cellBuffer[cellBufferIndex];
                 cell.Index = cellIndex;
                 cellBuffer[cellBufferIndex] = cell;
 
-                // set basic Cell Data
+                // set HexCellBasic
                 HexCellBasic cellBasic = new()
                 {
                     Index = cellIndex,
@@ -54,8 +54,8 @@ public partial struct InitialiseCellsJob : IJobEntity
                     Coorindate = HexCoordinates.FromOffsetCoordinates(gridX, gridZ, basic.wrapSize)
                 };
 
-                // give cell an entity reference to the grid
-                ecbEnd.SetComponent(jobChunkIndex, cell.Value, new HexGridReference { Value = main });
+                // give cell an entity reference to the grid - obsolete
+                // ecbEnd.SetComponent(jobChunkIndex, cell.Value, new HexGridReference { Value = main });
                 // set HexCellBasic data on entity
                 ecbEnd.SetComponent(jobChunkIndex, cell.Value, cellBasic);
                 // add component used when finding cell neighbours
@@ -68,7 +68,10 @@ public partial struct InitialiseCellsJob : IJobEntity
         // create an array equal to the number of cells in a chunk
         NativeArray<HexCellReference> chunkCells = new(chunkSize, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
 
-        // fill the array with all cells in chunk (because the cellBuffer was sorted this can be easily computed)
+        // fill the array with all cells in the chunk (because the cellBuffer was sorted this can be easily computed)
+        // we loop through the whole array and the cells are ordered such that all cells in the same chunk are next to each other
+        // we can start at i = 0 and chunkIndex = 0 and using the mod operator (%) can fill this native array with all
+        // the cells for a chunk, then copy that array to the chunk before overrwriting it again with the next chunk
         for (int i = 0, cellToChunkIndex = 0; i < cellBuffer.Length; i++, cellToChunkIndex = (cellToChunkIndex + 1) % chunkSize)
         {
             chunkCells[cellToChunkIndex] = cellBuffer[i];

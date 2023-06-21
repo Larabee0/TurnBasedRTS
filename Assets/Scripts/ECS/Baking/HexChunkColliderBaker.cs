@@ -1,10 +1,13 @@
-using System.Collections;
-using System.Collections.Generic;
 using Unity.Entities;
 using Unity.Physics;
-using Unity.Transforms;
 using UnityEngine;
 
+/// <summary>
+/// Provides authoring interaface for HexChunk Colliders, this allows the physics world index to be set.
+/// it probably shouldn't be anything other than 0 though.
+/// 
+/// The baker also adds a HexChunkCollider tagging component.
+/// </summary>
 public class HexChunkColliderBaker : MonoBehaviour
 {
     public uint physicsWorldIndex = 0;

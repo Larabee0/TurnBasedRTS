@@ -1,14 +1,10 @@
-using System.Collections;
-using System.Collections.Generic;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
-using Unity.Physics.Authoring;
 using Unity.Physics.Systems;
-using UnityEngine;
 
 [BurstCompile, UpdateInGroup(typeof(PhysicsSystemGroup)), UpdateBefore(typeof(SyncCustomPhysicsProxySystem))]
-public partial struct HexChunkColliderDisposal : ISystem
+public partial struct HexChunkColliderDisposalSystem : ISystem
 {
     [BurstCompile]
     public void OnCreate(ref SystemState state)
@@ -33,16 +29,5 @@ public partial struct HexChunkColliderDisposal : ISystem
         var ecbSingleton = SystemAPI.GetSingleton<BeginFixedStepSimulationEntityCommandBufferSystem.Singleton>();
         var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
         return ecb.AsParallelWriter();
-    }
-}
-
-[BurstCompile]
-public partial struct ColliderDisposalJob : IJobEntity
-{
-    public EntityCommandBuffer.ParallelWriter ecb;
-    public void Execute([ChunkIndexInQuery] int jobChunkIndex, Entity main, ref HexChunkColliderForDisposal collider)
-    {
-        ecb.DestroyEntity(jobChunkIndex, main);
-        collider.Dispose();
     }
 }

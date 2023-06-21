@@ -42,7 +42,7 @@ public struct HexMapEditorUIState : IComponentData
 }
 
 /// <summary>
-/// HitInfoRaycast taken from previous  ECS project to extend RaycastHit to provide Distance.
+/// HitInfoRaycast taken from previous ECS project to extend RaycastHit to provide Distance.
 /// Also sortable by distance
 /// </summary>
 public struct HitInfoRaycast : IComparer<HitInfoRaycast>

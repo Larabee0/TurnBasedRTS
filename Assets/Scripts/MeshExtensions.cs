@@ -1,8 +1,5 @@
-using System.Collections;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -13,9 +10,9 @@ public static class MeshExtensions
     public static void AddTriangleInfoUnperturbed(this MeshBasic wallMesh, float3 v1, float3 v2, float3 v3)
     {
         uint vertexIndex = wallMesh.VertexIndex;
-        wallMesh.verticesInternalTri[0] = new float3x2(v1,float3.zero);
-        wallMesh.verticesInternalTri[1] = new float3x2(v2,float3.zero);
-        wallMesh.verticesInternalTri[2] = new float3x2(v3,float3.zero);
+        wallMesh.verticesInternalTri[0] = new float3x2(v1, float3.zero);
+        wallMesh.verticesInternalTri[1] = new float3x2(v2, float3.zero);
+        wallMesh.verticesInternalTri[2] = new float3x2(v3, float3.zero);
         wallMesh.trianglesInternalTri[0] = vertexIndex;
         wallMesh.trianglesInternalTri[1] = vertexIndex + 1;
         wallMesh.trianglesInternalTri[2] = vertexIndex + 2;
@@ -26,10 +23,10 @@ public static class MeshExtensions
     public static void AddQuadInfoUnperturbed(this MeshBasic wallMesh, float3 v1, float3 v2, float3 v3, float3 v4)
     {
         uint vertexIndex = wallMesh.VertexIndex;
-        wallMesh.verticesInternalQuad[0] = new float3x2(v1,float3.zero);
-        wallMesh.verticesInternalQuad[1] = new float3x2(v2,float3.zero);
-        wallMesh.verticesInternalQuad[2] = new float3x2(v3,float3.zero);
-        wallMesh.verticesInternalQuad[3] = new float3x2(v4,float3.zero);
+        wallMesh.verticesInternalQuad[0] = new float3x2(v1, float3.zero);
+        wallMesh.verticesInternalQuad[1] = new float3x2(v2, float3.zero);
+        wallMesh.verticesInternalQuad[2] = new float3x2(v3, float3.zero);
+        wallMesh.verticesInternalQuad[3] = new float3x2(v4, float3.zero);
         wallMesh.trianglesInternalQuad[0] = vertexIndex;
         wallMesh.trianglesInternalQuad[1] = vertexIndex + 2;
         wallMesh.trianglesInternalQuad[2] = vertexIndex + 1;
@@ -38,6 +35,7 @@ public static class MeshExtensions
         wallMesh.trianglesInternalQuad[5] = vertexIndex + 3;
         wallMesh.ApplyQuad();
     }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void AddTriangleInfo(this MeshData mesh, float3 v1, float3 v2, float3 v3, float3 indices, float4 weights1, float4 weights2, float4 weights3)
     {
@@ -203,13 +201,14 @@ public static class MeshExtensions
         mesh.uvInternalTri[2] = uv3;
         mesh.ApplyTriangle();
     }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void AddTrianlgeInfoUVaUVb(this Mesh2UV mesh, float3 v1, float3 v2, float3 v3, float2 uvA1, float2 uvA2, float2 uvA3, float2 uvB1, float2 uvB2, float2 uvB3, float3 indices, float4 weights1, float4 weights2, float4 weights3)
     {
         uint vertexIndex = mesh.VertexIndex;
-        mesh.verticesInternalTri[0] = new(HexMetrics.Perturb(mesh.noiseColours, v1, mesh.wrapSize),float3.zero);
-        mesh.verticesInternalTri[1] = new(HexMetrics.Perturb(mesh.noiseColours, v2, mesh.wrapSize),float3.zero);
-        mesh.verticesInternalTri[2] = new(HexMetrics.Perturb(mesh.noiseColours, v3, mesh.wrapSize),float3.zero);
+        mesh.verticesInternalTri[0] = new(HexMetrics.Perturb(mesh.noiseColours, v1, mesh.wrapSize), float3.zero);
+        mesh.verticesInternalTri[1] = new(HexMetrics.Perturb(mesh.noiseColours, v2, mesh.wrapSize), float3.zero);
+        mesh.verticesInternalTri[2] = new(HexMetrics.Perturb(mesh.noiseColours, v3, mesh.wrapSize), float3.zero);
         mesh.trianglesInternalTri[0] = vertexIndex;
         mesh.trianglesInternalTri[1] = vertexIndex + 1;
         mesh.trianglesInternalTri[2] = vertexIndex + 2;
@@ -229,10 +228,10 @@ public static class MeshExtensions
     public static void AddQuadInfoUVaUVb(this Mesh2UV mesh, float3 v1, float3 v2, float3 v3, float3 v4, float2 uvA1, float2 uvA2, float2 uvA3, float2 uvA4, float2 uvB1, float2 uvB2, float2 uvB3, float2 uvB4, float3 indices, float4 weights1, float4 weights2, float4 weights3, float4 weights4)
     {
         uint vertexIndex = mesh.VertexIndex;
-        mesh.verticesInternalQuad[0] = new (HexMetrics.Perturb(mesh.noiseColours, v1, mesh.wrapSize),float3.zero);
-        mesh.verticesInternalQuad[1] = new (HexMetrics.Perturb(mesh.noiseColours, v2, mesh.wrapSize),float3.zero);
-        mesh.verticesInternalQuad[2] = new (HexMetrics.Perturb(mesh.noiseColours, v3, mesh.wrapSize),float3.zero);
-        mesh.verticesInternalQuad[3] = new (HexMetrics.Perturb(mesh.noiseColours, v4, mesh.wrapSize),float3.zero);
+        mesh.verticesInternalQuad[0] = new(HexMetrics.Perturb(mesh.noiseColours, v1, mesh.wrapSize), float3.zero);
+        mesh.verticesInternalQuad[1] = new(HexMetrics.Perturb(mesh.noiseColours, v2, mesh.wrapSize), float3.zero);
+        mesh.verticesInternalQuad[2] = new(HexMetrics.Perturb(mesh.noiseColours, v3, mesh.wrapSize), float3.zero);
+        mesh.verticesInternalQuad[3] = new(HexMetrics.Perturb(mesh.noiseColours, v4, mesh.wrapSize), float3.zero);
         mesh.trianglesInternalQuad[0] = vertexIndex;
         mesh.trianglesInternalQuad[1] = vertexIndex + 2;
         mesh.trianglesInternalQuad[2] = vertexIndex + 1;
@@ -257,6 +256,7 @@ public static class MeshExtensions
 
 public struct MeshWrapper
 {
+    public NativeArray<HexChunkCellWrapper> allChunkCells;
     public NativeList<HexFeatureRequest> featureRequests;
     public MeshData terrianMesh;
     public MeshUV riverMesh;
@@ -266,8 +266,9 @@ public struct MeshWrapper
     public MeshUV roadMesh;
     public MeshBasic wallMesh;
 
-    public MeshWrapper(NativeArray<float4> noiseColours, int wrapSize)
+    public MeshWrapper(NativeArray<float4> noiseColours, NativeArray<HexChunkCellWrapper> allChunkCells, int wrapSize)
     {
+        this.allChunkCells = allChunkCells;
         featureRequests = new NativeList<HexFeatureRequest>(Allocator.Temp);
         terrianMesh = new MeshData(noiseColours, wrapSize, 0);
         riverMesh = new MeshUV(noiseColours, wrapSize, 0);
@@ -277,19 +278,46 @@ public struct MeshWrapper
         roadMesh = new MeshUV(noiseColours, wrapSize, 0);
         wallMesh = new MeshBasic(0);
     }
-}
 
-public struct MeshDataWrapper
-{
-    public double TimeStamp;
-    public UnsafeParallelHashSet<int> chunksIncluded;
-    public Mesh.MeshDataArray meshDataArray;
 
-    public MeshDataWrapper(double timeStamp, UnsafeParallelHashSet<int> chunksIncluded, Mesh.MeshDataArray meshDataArray)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public int GetNeighbourIndex(HexDirection d, HexChunkCellWrapper cell)
+        => allChunkCells.BinarySearch(new HexChunkCellWrapper { cellBasic = new HexCellBasic { Index = cell.GetNeighbourIndex(d) } });
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool GetNeighbourCell(HexDirection d, HexChunkCellWrapper cell, out HexChunkCellWrapper neighbour)
     {
-        TimeStamp = timeStamp;
-        this.chunksIncluded = chunksIncluded;
-        this.meshDataArray = meshDataArray;
+        int neighbourIndex = GetNeighbourIndex(d, cell);
+        switch (neighbourIndex)
+        {
+            case >= 0:
+                neighbour = allChunkCells[neighbourIndex];
+                return true;
+            default:
+                neighbour = new();
+                return false;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool GetCell(int cellIndex, out HexChunkCellWrapper cell)
+    {
+        int chunkCellIndex = allChunkCells.BinarySearch(new HexChunkCellWrapper { cellBasic = new HexCellBasic { Index = cellIndex } });
+        switch (chunkCellIndex)
+        {
+            case >= 0:
+                cell = allChunkCells[chunkCellIndex];
+                return true;
+            default:
+                cell = new();
+                return false;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public HexChunkCellWrapper GetCell(int chunkCellIndex)
+    {
+        return allChunkCells[chunkCellIndex];
     }
 }
 
@@ -298,7 +326,7 @@ public struct MeshBasic
     private NativeArray<VertexAttributeDescriptor> VertexDescriptors;
     public NativeList<float3x2> vertices;
     public NativeList<uint> triangles;
-    public uint VertexIndex { get { return (uint)vertices.Length; } }
+    public uint VertexIndex => (uint)vertices.Length;
 
     public MeshBasic(int capacity = 0)
     {
@@ -363,7 +391,6 @@ public struct MeshBasic
         }
     }
 
-
     public void ApplyMesh(Mesh.MeshData meshData)
     {
         CalculateNormals();
@@ -374,7 +401,6 @@ public struct MeshBasic
         meshData.subMeshCount = 1;
         meshData.SetSubMesh(0, new SubMeshDescriptor(0, triangles.Length, MeshTopology.Triangles));
     }
-
 }
 
 public struct MeshData
@@ -478,8 +504,6 @@ public struct MeshData
         meshData.subMeshCount = 1;
         meshData.SetSubMesh(0, new SubMeshDescriptor(0, triangles.Length, MeshTopology.Triangles));
     }
-
-
 }
 
 public struct MeshUV
@@ -552,7 +576,6 @@ public struct MeshUV
         uvs.AddRange(uvInternalQuad);
         triangles.AddRange(trianglesInternalQuad);
     }
-
 
     private void CalculateNormals()
     {

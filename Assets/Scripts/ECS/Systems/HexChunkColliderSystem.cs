@@ -4,14 +4,11 @@ using Unity.Entities;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Collider = Unity.Physics.Collider;
-using Unity.Burst;
-using Unity.Transforms;
 
 /// <summary>
 /// Add collider update component to entities expecting colliders, remove in application job
 /// then add query for update reqirement including this component to prevent the system from always running.
 /// 
-/// Issue - existing colliders are not disposed of when grid modifcation occurs and the system re-runs
 /// </summary>
 [UpdateInGroup(typeof(HexSystemGroup)), UpdateBefore(typeof(HexChunkMeshApplicatorSystem))]
 public partial class HexChunkColliderSystem : SystemBase
@@ -78,6 +75,7 @@ public partial class HexChunkColliderSystem : SystemBase
     {
         RefRW<HexChunkColliderArray> colliderDataArray = GetColliderArrayData();
         EntityCommandBuffer.ParallelWriter ecbBegin = GetBeginEntityCommandBuffer();
+
         ColliderJobs();
 
         HexChunkColliderBatches colliderBatches = GetColliderBatches();
@@ -94,17 +92,17 @@ public partial class HexChunkColliderSystem : SystemBase
     private void ColliderJobs()
     {
         EntityCommandBuffer.ParallelWriter ecbEnd = GetEndEntityCommandBuffer();
-        new RemoveExistingColliderQuery
+        new RemoveExistingColliderQueryJob
         {
             ecbEnd = ecbEnd
         }.ScheduleParallel();
 
-        new HandleColliderRequest
+        new HandleColliderRequestJob
         {
             ecbEnd = ecbEnd
         }.ScheduleParallel();
 
-        new ScheduleColliderDestruction
+        new ScheduleColliderDestructionJob
         {
             ecbEnd = ecbEnd
         }.ScheduleParallel();
@@ -139,35 +137,39 @@ public partial class HexChunkColliderSystem : SystemBase
         }
         if (anyComplete && removeExistingColliderQuery.IsEmpty)
         {
-            NativeHashSet<Entity> chunks = new(colliderBatchData.batches.Count, Allocator.Temp);
-            NativeList<Entity> entities = new(colliderBatchData.batches.Count, Allocator.TempJob);
-            NativeList<BlobAssetReference<Collider>> physicsBlobs = new(colliderBatchData.batches.Count,Allocator.TempJob);
-            for (int i = colliderBatchData.batches.Count - 1; i >= 0; i--)
-            {
-                if (colliderBatchData.batches[i].AllCompleted)
-                {
-                    colliderBatchData.batches[i].GetCompletedData(physicsBlobs, entities, chunks);
-                    colliderBatchData.batches[i].Dispose();
-                    colliderBatchData.batches.RemoveAt(i);
-                }
-            }
+            CompleteColliderBatch(colliderBatchData, ecb);
+        }
+    }
 
-            if (entities.Length > 0)
+    private void CompleteColliderBatch(HexChunkColliderBatches colliderBatchData, EntityCommandBuffer.ParallelWriter ecb)
+    {
+        NativeHashSet<Entity> chunks = new(colliderBatchData.batches.Count, Allocator.Temp);
+        NativeList<Entity> entities = new(colliderBatchData.batches.Count, Allocator.TempJob);
+        NativeList<BlobAssetReference<Collider>> physicsBlobs = new(colliderBatchData.batches.Count, Allocator.TempJob);
+        for (int i = colliderBatchData.batches.Count - 1; i >= 0; i--)
+        {
+            if (colliderBatchData.batches[i].AllCompleted)
             {
-                //Debug.LogFormat("Scheduling applicaiton of {0} colliders", entities.Length);
-                Dependency = physicsBlobs.Dispose(entities.Dispose(new ColliderApplicatorJob
-                {
-                    colliderPrefab = SystemAPI.GetSingleton<HexPrefabsComponent>().hexChunkCollider,
-                    colliderEntities = entities,
-                    physicsBlobs = physicsBlobs,
-                    ecbEnd = ecb
-                }.Schedule(entities.Length, 4, Dependency)));
+                colliderBatchData.batches[i].GetCompletedData(physicsBlobs, entities, chunks);
+                colliderBatchData.batches[i].Dispose();
+                colliderBatchData.batches.RemoveAt(i);
             }
-            else
+        }
+
+        if (entities.Length > 0)
+        {
+            Dependency = physicsBlobs.Dispose(entities.Dispose(new ColliderApplicatorJob
             {
-                entities.Dispose();
-                physicsBlobs.Dispose();
-            }
+                colliderPrefab = SystemAPI.GetSingleton<HexPrefabsComponent>().hexChunkCollider,
+                colliderChunkTargetEntities = entities,
+                physicsBlobs = physicsBlobs,
+                ecbEnd = ecb
+            }.Schedule(entities.Length, 4, Dependency)));
+        }
+        else
+        {
+            entities.Dispose();
+            physicsBlobs.Dispose();
         }
     }
 
@@ -199,44 +201,5 @@ public partial class HexChunkColliderSystem : SystemBase
         var ecbSingleton = SystemAPI.GetSingleton<EndFixedStepSimulationEntityCommandBufferSystem.Singleton>();
         var ecb = ecbSingleton.CreateCommandBuffer(World.Unmanaged);
         return ecb.AsParallelWriter();
-    }
-}
-
-[BurstCompile, WithAll(typeof(HexChunkColliderRebuildRequest)), WithNone(typeof(HexChunkColliderRebuild))]
-public partial struct HandleColliderRequest : IJobEntity
-{
-    public EntityCommandBuffer.ParallelWriter ecbEnd;
-
-    public void Execute([ChunkIndexInQuery] int jobChunkIndex, Entity main, in HexChunkMeshEntities meshEntities)
-    {
-        ecbEnd.AddComponent<HexChunkColliderRebuild>(jobChunkIndex, meshEntities.Terrain);
-        ecbEnd.AddComponent<HexChunkColliderRebuild>(jobChunkIndex, main);
-        ecbEnd.RemoveComponent<HexChunkColliderRebuildRequest>(jobChunkIndex, main);
-    }
-}
-
-[BurstCompile, WithAll(typeof(HexMeshData),typeof(HexChunkColliderRebuild))]
-public partial struct ScheduleColliderDestruction : IJobEntity
-{
-    public EntityCommandBuffer.ParallelWriter ecbEnd;
-
-    public void Execute([ChunkIndexInQuery] int jobChunkIndex, Entity main, in HexChunkColliderReference collider)
-    {
-        ecbEnd.RemoveComponent<HexChunkColliderReference>(jobChunkIndex, main);
-        ecbEnd.AddComponent<HexChunkColliderRebuild>(jobChunkIndex, collider.value);
-        ecbEnd.RemoveComponent<PhysicsWorldIndex>(jobChunkIndex, collider.value);
-    }
-}
-
-[BurstCompile, WithAll(typeof(HexChunkColliderRebuild)),WithNone(typeof(PhysicsWorldIndex))]
-public partial struct RemoveExistingColliderQuery : IJobEntity
-{
-    public EntityCommandBuffer.ParallelWriter ecbEnd;
-
-    public void Execute([ChunkIndexInQuery] int jobChunkIndex, Entity main, in PhysicsCollider collider)
-    {
-        Entity colliderDisposer = ecbEnd.CreateEntity(jobChunkIndex);
-        ecbEnd.AddComponent(jobChunkIndex, colliderDisposer, new HexChunkColliderForDisposal { colliderBlob = collider.Value });
-        ecbEnd.DestroyEntity(jobChunkIndex, main);
     }
 }
