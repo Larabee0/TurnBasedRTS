@@ -16,7 +16,7 @@ using Unity.Entities;
 /// So instead we make sure to call addbuffer for ecb end, and append items to the buffer in ecb begin.
 /// the order the ecbs run here is ecbEnd > ecbBegin. this job will run mid frame render cycle, before ecbEnd but after ecbBegin.
 /// This means by the time the next ecbBegin system update occurs, ecbEnd will have run and all the hexCells will have the buffer
-/// and thus we can safely add to that buffer, even though it won't exist when we call it here.
+/// and thus we can safely add to that buffer, even though it won't exist when we call it here.         
 /// </summary>
 [BurstCompile, WithAll(typeof(HexChunkTag), typeof(HexChunkRefresh)), WithNone(typeof(HexChunkCellWrapper), typeof(HexChunkMeshUpdating))]
 public partial struct CellToChunkDataRequestJob : IJobEntity
@@ -24,10 +24,13 @@ public partial struct CellToChunkDataRequestJob : IJobEntity
     public EntityCommandBuffer.ParallelWriter ecbEnd;
     public EntityCommandBuffer.ParallelWriter ecbBegin;
 
-    public void Execute([ChunkIndexInQuery] int jobChunkIndex, Entity main, in DynamicBuffer<HexCellReference> chunkCellBuffer, in DynamicBuffer<HexCellChunkNeighbour> neighbourChunkCellBuffer)
+    
+
+    public void Execute([ChunkIndexInQuery] int jobChunkIndex, Entity main,
+        in DynamicBuffer<HexCellReference> chunkCellBuffer, in DynamicBuffer<HexCellChunkNeighbour> neighbourChunkCellBuffer)
     {
         HexChunkCellBuilder cellBuilder = new() { Chunk = main };
-
+        
         for (int i = 0; i < chunkCellBuffer.Length; i++)
         {
             ecbEnd.AddBuffer<HexChunkCellBuilder>(jobChunkIndex, chunkCellBuffer[i].Value);

@@ -50,6 +50,7 @@ public struct HexCellReference : IBufferElementData
     public int ChunkIndex;
 }
 
+
 /// <summary>
 /// 8 bytes min
 /// used by the <see cref="HexGridCreatorSystem"/> to intialise the correct number of chunks and columns.

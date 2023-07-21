@@ -1,5 +1,5 @@
 .unity-text-element {
-    color: rgba(255, 255, 255, 255);
+    color: rgb(255, 255, 255);
 }
 
 .unity-radio-button__checkmark {
@@ -15,13 +15,18 @@
 }
 
 .unity-button {
-    background-color: rgba(88, 101, 242, 255);
-    border-left-color: rgba(88, 101, 242, 255);
-    border-right-color: rgba(88, 101, 242, 255);
-    border-top-color: rgba(88, 101, 242, 255);
-    border-bottom-color: rgba(88, 101, 242, 255);
+    background-color: rgb(88, 101, 242);
+    border-left-color: rgb(88, 101, 242);
+    border-right-color: rgb(88, 101, 242);
+    border-top-color: rgb(88, 101, 242);
+    border-bottom-color: rgb(88, 101, 242);
     border-top-left-radius: 3px;
     border-bottom-left-radius: 3px;
     border-top-right-radius: 3px;
     border-bottom-right-radius: 3px;
+}
+
+.unity-button:hover {
+    background-color: rgb(255, 32, 32);
+    color: rgb(48, 226, 61);
 }

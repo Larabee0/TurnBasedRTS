@@ -11,7 +11,9 @@ public partial struct InitialiseCellsJob : IJobEntity
 {
     public EntityCommandBuffer.ParallelWriter ecbEnd;
 
-    public void Execute([ChunkIndexInQuery] int jobChunkIndex, Entity main, ref DynamicBuffer<HexCellReference> cellBuffer, in HexGridBasic basic, in DynamicBuffer<HexGridChunkBuffer> chunkBuffer)
+    public void Execute([ChunkIndexInQuery] int jobChunkIndex, Entity main,
+        ref DynamicBuffer<HexCellReference> cellBuffer,
+        in HexGridBasic basic, in DynamicBuffer<HexGridChunkBuffer> chunkBuffer)
     {
         int cellCountX = basic.cellCountX;
         int cellCountZ = basic.cellCountZ;

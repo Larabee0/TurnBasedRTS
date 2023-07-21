@@ -23,6 +23,7 @@ public struct HexCellBasic : IComponentData, IComparable<HexCellBasic>
     {
         return Index.CompareTo(other);
     }
+
 }
 
 /// <summary>
@@ -67,7 +68,7 @@ public struct HexCellTerrain : IComponentData
 }
 
 /// <summary>
-/// 8 bytes min
+/// 6 bytes min
 /// Used by the <see cref="HexShaderSystem"/> primarily in the <see cref="HexCellShaderRefreshWrapper"/> buffer
 /// </summary>
 public struct HexCellNav : IComponentData

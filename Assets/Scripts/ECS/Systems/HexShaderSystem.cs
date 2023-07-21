@@ -26,7 +26,7 @@ public partial class HexShaderSystem : SystemBase
         queries[3] = builder.WithAll< HexShaderAllCellRequest >().Build(EntityManager);
         builder.Reset();
         queries[4] = builder.WithAll<HexShaderCellDataComplete, HexShaderRefreshAll>().Build(EntityManager);
-        RequireAnyForUpdate(queries);
+        //RequireAnyForUpdate(queries);
 
         builder.Dispose();
 
@@ -57,16 +57,27 @@ public partial class HexShaderSystem : SystemBase
 
     private void PaintTerrainTexture()
     {
+        // check if texture paint has been requested
         if (SystemAPI.HasSingleton<HexShaderPaintTexture>())
         {
+            // get texture instance
             Texture2D shaderTexture = EntityManager.GetComponentObject<HexShaderCellTexture>(SystemHandle).value;
             if (shaderTexture != null)
             {
+                // get texture data buffer (buffer of Color32) also get the PixelData from the texture.
+                // using the UnsafeUtility we can copy the buffer to the PixelData Array.
+                // this is done by getting the underlying memory pointer for the native arrays (GetUnsafePtr)
+                // This can only be done in an unsafe context.
+                
                 unsafe
                 {
-                    UnsafeUtility.MemCpy(shaderTexture.GetPixelData<Color32>(0).GetUnsafePtr(), SystemAPI.GetSingleton<HexShaderTextureData>().values.GetUnsafeReadOnlyPtr(), (shaderTexture.height * shaderTexture.width) * UnsafeUtility.SizeOf<Color32>());
+                    UnsafeUtility.MemCpy(shaderTexture.GetPixelData<Color32>(0).GetUnsafePtr(),
+                        SystemAPI.GetSingleton<HexShaderTextureData>().values.GetUnsafeReadOnlyPtr(),
+                        shaderTexture.height * shaderTexture.width * UnsafeUtility.SizeOf<Color32>());
                 }
+                // remove repaint tag
                 EntityManager.RemoveComponent<HexShaderPaintTexture>(SystemHandle);
+                // upload texture data to the GPU frame buffer
                 shaderTexture.Apply();
             }
         }

@@ -3,6 +3,7 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.Transforms;
 using UnityEngine;
 
 [UpdateInGroup(typeof(HexSystemGroup)), BurstCompile]
@@ -23,7 +24,7 @@ public partial struct HexChunkTriangulatorSystem : ISystem
 
         entityQueries[0] = TriangulatorInitQuery = builder.WithAll<HexChunkCellDataCompleted, HexChunkTag, HexChunkRefresh, HexChunkCellWrapper, HexCellReference, HexChunkMeshEntities>().WithNone<HexChunkMeshUpdating>().Build(ref state);
         builder.Reset();
-
+        
         entityQueries[1] = builder.WithAll<HexChunkCellDataCompleted, HexChunkTag, HexChunkRefresh, HexChunkCellWrapper, HexCellReference, HexChunkMeshEntities>().Build(ref state);
         builder.Reset();
 
@@ -63,7 +64,13 @@ public partial struct HexChunkTriangulatorSystem : ISystem
         {
             Triangulate(ref state,ecbEnd);
         }
-        new CellToChunkDataRequestJob { ecbEnd = ecbPres, ecbBegin = ecbBegin }.ScheduleParallel();
+        new CellToChunkDataRequestJob
+        {
+            ecbEnd = ecbPres,
+            ecbBegin = ecbBegin
+        }.ScheduleParallel();
+
+
         new HandleChunkRefreshRequestJob { ecb = ecbEnd }.ScheduleParallel();
     }
 

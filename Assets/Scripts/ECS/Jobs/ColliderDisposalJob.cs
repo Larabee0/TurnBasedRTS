@@ -15,9 +15,20 @@ using Unity.Entities;
 public partial struct ColliderDisposalJob : IJobEntity
 {
     public EntityCommandBuffer.ParallelWriter ecb;
+
+    /// <summary>
+    /// This job disposes of colliders no longer needed in the game.
+    /// </summary>
+    /// <param name="jobChunkIndex">ParallelWriter ecbs need a sort key,
+    /// IJobEntity can have the ChunkIndexInQuery attribute added to an int in its execute parameters, this is a good value
+    /// to use for the sort key.</param>
+    /// <param name="main">the entity the components in the parameters are attached to</param>
+    /// <param name="collider">the collider data to dispose (this parsed as ref to indicate we want read/write access)</param>
     public void Execute([ChunkIndexInQuery] int jobChunkIndex, Entity main, ref HexChunkColliderForDisposal collider)
     {
+        // queue the entity for destruction in the command buffer
         ecb.DestroyEntity(jobChunkIndex, main);
+        // dispose the collider data to prevent a memory leak
         collider.Dispose();
     }
 }

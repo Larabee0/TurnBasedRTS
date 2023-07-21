@@ -48,7 +48,7 @@ public partial struct HexGridCreatorSystem : ISystem
             ecbEnd = ecb,
             HexGridChunkPrefab = prefabs.hexGridChunk,
         }.ScheduleParallel();
-
+        
         new InstantiateCellsJob
         {
             ecbEnd = ecb,
@@ -59,7 +59,7 @@ public partial struct HexGridCreatorSystem : ISystem
         {
             ecbEnd = ecb,
         }.ScheduleParallel();
-
+        
         new InitialiseCellsJob
         {
             ecbEnd = ecb,

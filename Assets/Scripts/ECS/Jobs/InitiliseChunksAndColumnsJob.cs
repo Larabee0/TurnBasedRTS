@@ -30,7 +30,6 @@ public partial struct InitiliseChunksAndColumnsJob : IJobEntity
             ecbEnd.AddComponent(chunkIndex, temp, new HexGridColumn { Index = i });
             ecbEnd.AddComponent(chunkIndex, temp, new LocalTransform { Position = float3.zero, Scale = 1, Rotation = quaternion.identity });
             ecbEnd.AddComponent<LocalToWorld>(chunkIndex, temp);
-
             ecbEnd.AppendToBuffer(chunkIndex, main, new HexGridColumnBuffer { Index = i, Value = temp });
         }
 
